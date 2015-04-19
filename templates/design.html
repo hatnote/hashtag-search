@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+  <meta charset="utf-8">
+  <title>Wikipedia edits by hashtag</title>
+  <meta name="description" content="">
+  <meta name="author" content="">
+
+  <link rel="stylesheet" href="static/css/normalize.css">
+  <link rel="stylesheet" href="static/css/skeleton.css">
+
+  <script type="text/javascript" src="static/js/jquery.js"></script> 
+  <script type="text/javascript" src="static/js/history.min.js"></script> 
+  <script type="text/javascript" src="static/js/jquery.tablesorter.min.js"></script> 
+
+  <style>
+  .mainspace-only-label {
+    float: right;
+  }
+  th.headerSortUp { 
+    background: no-repeat right url(images/desc.gif); 
+    background-color: #f5f5f5; 
+  } 
+  th.headerSortDown { 
+    background: no-repeat right url(images/asc.gif); 
+    background-color: #f5f5f5; 
+  } 
+  </style>
+
+  <script>
+  $(function() {
+    $('#rc-table').tablesorter(); 
+  });
+  </script>
+
+</head>
+<body>
+  <div class="container">
+    <div class="row">
+      <div class="full column" style="margin-top: 5%">
+        <h1>Wikipedia edits by hashtag</h1>
+      </div>
+    </div>
+    <div class="row">
+      <div class="full width">
+        <h2>Showing <span id="filter-header"><strong>{tag}</strong></span></h2>
+        <table class="u-full-width tablesorter" id="rc-table">
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Page</th>
+              <th>Tags</th>
+              <th>Summary</th>
+              <th>Size</th>
+              <th>Time</th>
+            </tr>
+          </thead>
+          <tbody>
+          {#revisions}
+            <tr>
+              <td>{rc_user_text}</td>
+              <td><a href="{diff_url}">{rc_title}</a></td>
+              <td>#test</td>
+              <td>{rc_comment}</td>
+              <td>{diff_size}</td>
+              <td>{date}</td>
+            </tr>
+          {/revisions}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
