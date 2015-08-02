@@ -85,6 +85,7 @@ def get_hashtags(tag, start_date=None, end_date=None, lang=DEFAULT_LANG):
     AND rc.htrc_lang = ?
     AND rc.rc_timestamp BETWEEN ? AND ?
     ORDER BY rc.rc_id DESC'''
+    # TODO: Pagination if the results are too big?
     params = (tag, lang, start_date, end_date)
     cursor.execute(query, params)
     return cursor.fetchall()
@@ -99,6 +100,7 @@ def get_all_hashtags(lang=DEFAULT_LANG, limit=DEFAULT_LIMIT):
     WHERE rc.rc_type = 0
     ORDER BY rc.rc_id DESC
     LIMIT ?'''
+    # TODO: Pagination for the next bunch of revisions
     params = (limit,)
     cursor.execute(query, params)
     return cursor.fetchall()
@@ -115,6 +117,8 @@ def process_revs(rev, lang):
                                  rev['rc_last_oldid'])
     rev['tags'] = find_hashtags(rev['rc_comment'])
     for tag in rev['tags']:
+        # TODO: Should the tags column also be hyperlinks?
+        # TODO: Turn @mentions into links
         link = '<a href="/hashtags/search/%s">#%s</a>' % (tag, tag)
         new_comment = rev['rc_comment'].replace('#%s' % tag, link)
         rev['rc_comment'] = new_comment
@@ -129,6 +133,7 @@ def generate_report(request, tag=None, lang=DEFAULT_LANG, days=DEFAULT_DAYS):
     _date_pattern  = '%Y-%m-%d'
     start_date = request.values.get('start-date')
     end_date = request.values.get('end-date')
+    # TODO: Organize dates
     if end_date:
         end_date = datetime.strptime(end_date, _date_pattern)
     else:
@@ -141,22 +146,27 @@ def generate_report(request, tag=None, lang=DEFAULT_LANG, days=DEFAULT_DAYS):
     if tag:
         revs = get_hashtags(tag, start_date, end_date, lang)
     else:
+        # TODO: When you get all hashtags, the results tempalte should
+        # explain the results.
         revs = get_all_hashtags(lang=lang)
     ret = [process_revs(rev, lang) for rev in revs]
     ret = [r for r in ret if not all(tag.lower() == 'redirect' for tag
-                                     in r['tags'])]
+                                     in r['tags'])]  
+    # TODO: Filter for phrases that are not valid hashtags (like #1)
+    # or are mediawiki magic words (like redirect)
     return {'revisions': ret, 
             'tag': tag, 
-            'start_date': start_date.strftime('%Y-%m-%d'),  # TODO
-            'end_date': end_date.strftime('%Y-%m-%d'),  # TODO
-            'lang': lang
-    }
+            'start_date': start_date.strftime('%Y-%m-%d'),  # TODO: Better date handling
+            'end_date': end_date.strftime('%Y-%m-%d'),
+            'lang': lang}
 
 
 def create_app():
     _template_dir = os.path.join(_CUR_PATH, TEMPLATES_PATH)
     _static_dir = os.path.join(_CUR_PATH, STATIC_PATH)
     templater = AshesRenderFactory(_template_dir)
+    # TODO: Add support for @mentions
+    # TODO: Add a list of the most popular tags/mentions on the front page
     routes = [('/', home, 'index.html'),
               ('/search/', generate_report, 'report.html'),
               ('/search/all', generate_report, 'report.html'),

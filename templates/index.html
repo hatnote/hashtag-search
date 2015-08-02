@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+  <meta charset="utf-8">
+  <title>Wikipedia edits by hashtag</title>
+  <meta name="description" content="">
+  <meta name="author" content="">
+
+  <link rel="stylesheet" href="/hashtags/static/css/normalize.css">
+  <link rel="stylesheet" href="/hashtags/static/css/skeleton.css">
+
+  <script type="text/javascript" src="/hashtags/static/js/jquery.js"></script> 
+
+  <style>
+  .page-header {
+    color: #404040;
+    background: #f8f8f8;
+    margin: 0 0 1em 0;
+    border-bottom: 1px solid #d8e6ec;
+  }
+  .page-footer {
+    text-align: center;
+    font-size: 85%;
+    color: #999;
+  }
+  </style>
+
+  <script>
+    var DEFAULT_OFFSET = 30; // Number of days for the hashtag search
+
+    function get_date(offset) {
+      var offset = offset || -1,
+          date = new Date(),
+          this_date = new Date();
+      this_date.setDate(date.getDate() - offset);
+      var year = this_date.getFullYear(),
+          month = ('0' + (this_date.getMonth() + 1)).slice(-2),
+          day = ('0' + this_date.getDate()).slice(-2);
+      return year + '-' + month + '-' + day
+    }
+
+    $(function() {
+      $('#start-date').attr({
+        'value': get_date(DEFAULT_OFFSET),
+        'min': get_date(90)
+      });
+      $('#end-date').attr('value', get_date());
+      $('#tag-search').submit(function(e) {
+        var params = $('#tag-search').serialize();
+        var tag = $('#search').val();
+        window.location.href = '/hashtags/search/' + tag + '?' + params;
+        e.preventDefault();
+      });
+    });
+  </script>
+</head>
+<body>
+  <div class="section page-header">
+    <div class="container">
+      <div class="row">
+	<div class="full column" style="margin-top: 5%">
+          <h1>Wikipedia social search</h1>
+	</div>
+      </div>
+    </div>
+  </div>
+  <div class="container">
+    <form id="tag-search">
+      <div class="row">
+	<div class="full width">
+	  <label for="search">Hashtag</label>
+          <input class="u-full-width" type="search" placeholder="Which tag?" id="search">
+	</div>
+      </div>
+      <div class="row">
+	<div class="six columns">
+	  <label for="start-date">Start date</label>
+	  <input type="date" class="u-full-width" id="start-date" name="start-date" value="2015-04-10">
+          <label for="lang">Two letter lanugage code</label>
+          <input class"u-full-width" type="text" id="lang" name="lang" placeholder="??" value="en" maxlength="2">
+	</div>
+	<div class="six columns">
+	  <label for="end-date">End date</label>
+	  <input type="date" class="u-full-width" id="end-date" name="end-date" value=>
+	</div>
+      </div>
+      <div class="row">
+	<div class="full width">
+	  <input class="button-primary" type="submit" value="Submit">
+	  <p><a class="button" href="/hashtags/search/all">Show all hashtags</a></p>
+	</div>
+      </div>
+    </form>
+  </div>
+</div>
+<div class="section page-footer">
+  <div class="container">
+    <div class="row">
+      <div class="full width">
+        <p><a href="http://blog.hatnote.com/post/112756032432/the-humble-hashtag-now-on-wikipedia">Learn more</a>. Built by <a href="https://twitter.com/sklaporte">Stephen LaPorte</a> and <a href="https://twitter.com
+/mhashemi">Mahmoud Hashemi</a>. Our source code is <a href="https://github.com/hatnote/hashtag-search">available on github</a>.
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
