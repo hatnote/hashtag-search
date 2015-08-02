@@ -18,7 +18,11 @@ FLUP_LOG_DIR = os.path.expanduser('~')
 TEMPLATES_PATH = 'templates'
 STATIC_PATH = 'static'
 DEFAULT_LANG = 'en'
-DEFAULT_DAYS = 3
+DEFAULT_DAYS = 30
+DEFAULT_LIMIT = 50
+
+HT_DB_HOST = 's1.labsdb'  # The hashtag table is on the same server as the enwiki db replica
+HT_DB_NAME = 's52490__hashtags_p'
 
 _CUR_PATH = os.path.dirname(__file__)
 
@@ -51,32 +55,54 @@ def default_dates(start, end):
     return start, end
 
 
-def get_hashtags(tag=None, start_date=None, end_date=None, lang=DEFAULT_LANG):
-    _date_pattern = '%Y%m%d%H%M%S'
-    query = '''
-        SELECT *
-        FROM recentchanges
-        WHERE rc_type = 0
-        AND rc_timestamp BETWEEN ? AND ?
-        AND rc_comment REGEXP ? ORDER BY rc_timestamp DESC'''
-    db_title = lang + 'wiki_p'
-    db_host = lang + 'wiki.labsdb'
-    connection = oursql.connect(db=db_title,
-                                host=db_host,
-                                read_default_file=DB_CONFIG_PATH,
+
+def ht_db_connect(read_default_file=DB_CONFIG_PATH):
+    connection = oursql.connect(db=HT_DB_NAME,
+                                host=HT_DB_HOST,
+                                read_default_file=read_default_file,
                                 charset=None,
-                                use_unicode=True)
-    cursor = connection.cursor(oursql.DictCursor)
-    if tag is None:
-        tag_pattern = '(^| )#[[:alpha:]]{1}[[:alnum:]]*[[:>:]]'
-    else:
-        tag_pattern = '(^| )#%s[[:>:]]' % tag
+                                use_unicode=False)
+    return connection
+
+
+def get_hashtags(tag, start_date=None, end_date=None, lang=DEFAULT_LANG):
+    _date_pattern = '%Y%m%d%H%M%S'
     start_date, end_date = default_dates(start_date, end_date)
     start_date = start_date.strftime(_date_pattern)
     end_date = end_date.strftime(_date_pattern)
-    cursor.execute(query, (start_date, end_date, tag_pattern))
-    ret = cursor.fetchall()
-    return ret
+    if tag and tag[0] == '#':
+        tag = tag[1:]
+    connection = ht_db_connect()
+    cursor = connection.cursor(oursql.DictCursor)
+    query = '''
+    SELECT *
+    FROM recentchanges AS rc
+    JOIN hashtag_recentchanges AS htrc
+      ON htrc.htrc_id = rc.htrc_id
+    JOIN hashtags AS ht
+      ON ht.ht_id = htrc.ht_id
+    WHERE ht.ht_text = ?
+    AND rc.htrc_lang = ?
+    AND rc.rc_timestamp BETWEEN ? AND ?
+    ORDER BY rc.rc_id DESC'''
+    params = (tag, lang, start_date, end_date)
+    cursor.execute(query, params)
+    return cursor.fetchall()
+
+
+def get_all_hashtags(lang=DEFAULT_LANG, limit=DEFAULT_LIMIT):
+    connection = ht_db_connect()
+    cursor = connection.cursor(oursql.DictCursor)
+    query = '''
+    SELECT *
+    FROM recentchanges AS rc
+    WHERE rc.rc_type = 0
+    ORDER BY rc.rc_id DESC
+    LIMIT ?'''
+    params = (limit,)
+    cursor.execute(query, params)
+    return cursor.fetchall()
+
 
 
 def process_revs(rev, lang):
@@ -88,6 +114,10 @@ def process_revs(rev, lang):
                                  rev['rc_this_oldid'],
                                  rev['rc_last_oldid'])
     rev['tags'] = find_hashtags(rev['rc_comment'])
+    for tag in rev['tags']:
+        link = '<a href="/hashtags/search/%s">#%s</a>' % (tag, tag)
+        new_comment = rev['rc_comment'].replace('#%s' % tag, link)
+        rev['rc_comment'] = new_comment
     return rev
 
 
@@ -108,12 +138,13 @@ def generate_report(request, tag=None, lang=DEFAULT_LANG, days=DEFAULT_DAYS):
     else:
         start_date = end_date - timedelta(days=DEFAULT_DAYS)
     lang = request.values.get('lang', DEFAULT_LANG).lower()
-    revs = get_hashtags(tag, start_date, end_date, lang)
+    if tag:
+        revs = get_hashtags(tag, start_date, end_date, lang)
+    else:
+        revs = get_all_hashtags(lang=lang)
     ret = [process_revs(rev, lang) for rev in revs]
     ret = [r for r in ret if not all(tag.lower() == 'redirect' for tag
                                      in r['tags'])]
-    if tag is None:
-        tag = 'all tags'
     return {'revisions': ret, 
             'tag': tag, 
             'start_date': start_date.strftime('%Y-%m-%d'),  # TODO
