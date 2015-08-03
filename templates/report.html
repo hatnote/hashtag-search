@@ -24,6 +24,28 @@
     margin: 0 0 1em 0;
     border-bottom: 1px solid #d8e6ec;
   }
+  .page-header p, .page-header a {
+    color: #999;
+  }
+  .page-header a:hover {
+    color: #1EAEDB;
+  }
+  .page-header h1 a {
+    color: #404040;
+    text-decoration: none;
+  }
+  .info {
+    border: 1px solid #E1E1E1;
+    border-radius: 4px;
+    padding: 1.5rem 2rem;
+    margin: 0 0.2rem;
+  }
+  .info p {
+    margin: 0.1em 0;
+    font-size: 1em;
+
+    color: #9E9E9E;
+  }
   .page-footer {
     text-align: center;
     font-size: 85%;
@@ -54,7 +76,8 @@
     <div class="container">
       <div class="row">
 	<div class="full column" style="margin-top: 5%">
-          <h1>Wikipedia social search</h1>
+          <h1><a href="/hashtags">Wikipedia social search</a></h1>
+	  <p>Search for <a href="http://blog.hatnote.com/post/112756032432/the-humble-hashtag-now-on-wikipedia">hashtags</a> in Wikipedia edit summaries</p>
 	</div>
       </div>
     </div>
@@ -62,7 +85,11 @@
   <div class="container">
     <div class="row">
       <div class="full width">
-        <h2>Showing <span id="filter-header"><strong>{tag}</strong></span> from {start_date} to {end_date}</h2>
+	<div class="info">
+	  <h2>{tag}</h2>
+	  <p>from {start_date} to {end_date}</p>
+	  <p>{total_revs} revisions</p>
+	</div>
         <table class="u-full-width tablesorter" id="rc-table">
           <thead>
             <tr>

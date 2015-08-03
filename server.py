@@ -92,6 +92,7 @@ def get_hashtags(tag, start_date=None, end_date=None, lang=DEFAULT_LANG):
 
 
 def get_all_hashtags(lang=DEFAULT_LANG, limit=DEFAULT_LIMIT):
+    # Note: this probably shouldn't be limited to DEFAULT_LANG
     connection = ht_db_connect()
     cursor = connection.cursor(oursql.DictCursor)
     query = '''
@@ -105,6 +106,24 @@ def get_all_hashtags(lang=DEFAULT_LANG, limit=DEFAULT_LIMIT):
     cursor.execute(query, params)
     return cursor.fetchall()
 
+
+def get_top_hashtags(limit=10):
+    connection = ht_db_connect()
+    cursor = connection.cursor(oursql.DictCursor)
+    query = '''
+    SELECT ht.ht_text, COUNT(*) as count
+    FROM recentchanges AS rc
+    JOIN hashtag_recentchanges AS htrc
+      ON htrc.htrc_id = rc.htrc_id
+    JOIN hashtags AS ht
+      ON ht.ht_id = htrc.ht_id
+    WHERE ht.ht_text REGEXP '[[:alpha:]]{1}[[:alnum:]]*'
+    GROUP BY ht.ht_text
+    ORDER BY COUNT(*) DESC
+    LIMIT ?'''
+    params = (limit,)
+    cursor.execute(query, params)
+    return cursor.fetchall()
 
 
 def process_revs(rev, lang):
@@ -126,7 +145,8 @@ def process_revs(rev, lang):
 
 
 def home():
-    pass
+    top_tags = get_top_hashtags()
+    return {'top_tags': top_tags}
 
 
 def generate_report(request, tag=None, lang=DEFAULT_LANG, days=DEFAULT_DAYS):
@@ -144,18 +164,19 @@ def generate_report(request, tag=None, lang=DEFAULT_LANG, days=DEFAULT_DAYS):
         start_date = end_date - timedelta(days=DEFAULT_DAYS)
     lang = request.values.get('lang', DEFAULT_LANG).lower()
     if tag:
-        revs = get_hashtags(tag, start_date, end_date, lang)
+        revs = get_hashtags(tag.lower(), start_date, end_date, lang)
+        tag = '#' + tag
     else:
         # TODO: When you get all hashtags, the results tempalte should
         # explain the results.
         revs = get_all_hashtags(lang=lang)
+        tag = 'All hashtags'
     ret = [process_revs(rev, lang) for rev in revs]
-    ret = [r for r in ret if not all(tag.lower() == 'redirect' for tag
-                                     in r['tags'])]  
     # TODO: Filter for phrases that are not valid hashtags (like #1)
     # or are mediawiki magic words (like redirect)
     return {'revisions': ret, 
             'tag': tag, 
+            'total_revs': len(ret),
             'start_date': start_date.strftime('%Y-%m-%d'),  # TODO: Better date handling
             'end_date': end_date.strftime('%Y-%m-%d'),
             'lang': lang}

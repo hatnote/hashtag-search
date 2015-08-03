@@ -19,6 +19,12 @@
     margin: 0 0 1em 0;
     border-bottom: 1px solid #d8e6ec;
   }
+  .page-header p, .page-header a {
+    color: #999;
+  }
+  .page-header a:hover {
+    color: #1EAEDB;
+  }
   .page-footer {
     text-align: center;
     font-size: 85%;
@@ -60,15 +66,18 @@
     <div class="container">
       <div class="row">
 	<div class="full column" style="margin-top: 5%">
-          <h1>Wikipedia social search</h1>
+	  <h1>Wikipedia social search</h1>
+	  <p>Search for <a href="http://blog.hatnote.com/post/112756032432/the-humble-hashtag-now-on-wikipedia">hashtags</a> in Wikipedia edit summaries</p>
 	</div>
       </div>
     </div>
   </div>
   <div class="container">
+    <div cass="row">
+      <div class="nine columns">
     <form id="tag-search">
       <div class="row">
-	<div class="full width">
+	<div class="twelve columns">
 	  <label for="search">Hashtag</label>
           <input class="u-full-width" type="search" placeholder="Which tag?" id="search">
 	</div>
@@ -86,12 +95,22 @@
 	</div>
       </div>
       <div class="row">
-	<div class="full width">
+	<div class="six columns">
 	  <input class="button-primary" type="submit" value="Submit">
 	  <p><a class="button" href="/hashtags/search/all">Show all hashtags</a></p>
 	</div>
       </div>
     </form>
+    </div>
+      <div class="three columns">
+	<h3>Top tags</h3>
+	<ol>
+	  {#top_tags}
+	  <li><a href="/hashtags/search/{ht_text}">#{ht_text}</a> ({count})</li>
+	  {/top_tags}
+	</ol>
+      </div>
+    </div>
   </div>
 </div>
 <div class="section page-footer">
