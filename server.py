@@ -26,6 +26,7 @@ HT_DB_NAME = 's52490__hashtags_p'
 
 _CUR_PATH = os.path.dirname(__file__)
 
+EXCLUDED = ('redirect', 'ifexist', 'switch', 'ifexpr')
 
 class ExceptionPrinter(Middleware):
     def request(self, next, request, _route):
@@ -98,11 +99,18 @@ def get_all_hashtags(lang=DEFAULT_LANG, limit=DEFAULT_LIMIT):
     query = '''
     SELECT *
     FROM recentchanges AS rc
+    JOIN hashtag_recentchanges AS htrc
+      ON htrc.htrc_id = rc.htrc_id
+    JOIN hashtags AS ht
+      ON ht.ht_id = htrc.ht_id
     WHERE rc.rc_type = 0
+    AND ht.ht_text NOT IN(%s)
+    AND ht.ht_text REGEXP '[[:alpha:]]+'
+    AND CHAR_LENGTH(ht.ht_text) > 1
     ORDER BY rc.rc_id DESC
-    LIMIT ?'''
+    LIMIT ?''' % ', '.join(['?' for i in range(len(EXCLUDED))])
     # TODO: Pagination for the next bunch of revisions
-    params = (limit,)
+    params = EXCLUDED + (limit,)
     cursor.execute(query, params)
     return cursor.fetchall()
 
@@ -118,10 +126,13 @@ def get_top_hashtags(limit=10):
     JOIN hashtags AS ht
       ON ht.ht_id = htrc.ht_id
     WHERE ht.ht_text REGEXP '[[:alpha:]]{1}[[:alnum:]]*'
+    AND ht.ht_text NOT IN(%s)
+    AND ht.ht_text REGEXP '[[:alpha:]]+'
+    AND CHAR_LENGTH(ht.ht_text) > 1
     GROUP BY ht.ht_text
     ORDER BY COUNT(*) DESC
-    LIMIT ?'''
-    params = (limit,)
+    LIMIT ?'''  % ', '.join(['?' for i in range(len(EXCLUDED))])
+    params = EXCLUDED + (limit,)
     cursor.execute(query, params)
     return cursor.fetchall()
 
@@ -174,9 +185,12 @@ def generate_report(request, tag=None, lang=DEFAULT_LANG, days=DEFAULT_DAYS):
     ret = [process_revs(rev, lang) for rev in revs]
     # TODO: Filter for phrases that are not valid hashtags (like #1)
     # or are mediawiki magic words (like redirect)
+    users = set([r['rc_user_text'] for r in ret])
     return {'revisions': ret, 
             'tag': tag, 
             'total_revs': len(ret),
+            'total_users': len(users),
+            'total_bytes': '{:,}'.format(sum([abs(r['diff_size']) for r in ret])),
             'start_date': start_date.strftime('%Y-%m-%d'),  # TODO: Better date handling
             'end_date': end_date.strftime('%Y-%m-%d'),
             'lang': lang}

@@ -26,10 +26,25 @@
     color: #1EAEDB;
   }
   .page-footer {
+    margin-top: 1em;
     text-align: center;
     font-size: 85%;
     color: #999;
   }
+  .info {
+    border: 1px solid #E1E1E1;
+    border-radius: 4px;
+    padding: 1.5rem 2rem;
+    margin: 0 0.2rem;
+  }
+  .info ol {
+    margin-bottom: 0;
+  }
+  .info h3 {
+    font-size: 1em;
+    font-weight: 600;
+  }
+
   </style>
 
   <script>
@@ -103,12 +118,14 @@
     </form>
     </div>
       <div class="three columns">
+	<div class="info">
 	<h3>Top tags</h3>
 	<ol>
 	  {#top_tags}
 	  <li><a href="/hashtags/search/{ht_text}">#{ht_text}</a> ({count})</li>
 	  {/top_tags}
 	</ol>
+	</div>
       </div>
     </div>
   </div>
