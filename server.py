@@ -96,6 +96,13 @@ def get_all_hashtags(lang=DEFAULT_LANG, limit=DEFAULT_LIMIT):
     # Note: this probably shouldn't be limited to DEFAULT_LANG
     connection = ht_db_connect()
     cursor = connection.cursor(oursql.DictCursor)
+    """Rules for hashtags: 
+    1. Does not include MediaWiki magic words
+       (like #REDIRECT) or parser functions
+    2. Must be longer than one character
+    3. Must contain at least one non-numeric
+       character.
+    """
     query = '''
     SELECT *
     FROM recentchanges AS rc
