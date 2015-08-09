@@ -12,7 +12,6 @@ from boltons.tbutils import ExceptionInfo
 
 from dal import (get_hashtags, get_all_hashtags, get_top_hashtags)
 
-
 FLUP_LOG_DIR = os.path.expanduser('~')
 TEMPLATES_PATH = 'templates'
 STATIC_PATH = 'static'
@@ -61,10 +60,7 @@ def generate_report(request, tag=None, offset=0):
             'tag': tag, 
             'total_revs': len(ret),
             'total_users': len(users),
-            'total_bytes': '{:,}'.format(sum([abs(r['diff_size']) for r in ret])),
-            'start_date': start_date.strftime('%Y-%m-%d'),  # TODO: Better date handling
-            'end_date': end_date.strftime('%Y-%m-%d'),
-            'lang': lang}
+            'total_bytes': '{:,}'.format(sum([abs(r['diff_size']) for r in ret]))}
 
 
 def create_app():

@@ -48,25 +48,8 @@
   </style>
 
   <script>
-    var DEFAULT_OFFSET = 30; // Number of days for the hashtag search
-
-    function get_date(offset) {
-      var offset = offset || -1,
-          date = new Date(),
-          this_date = new Date();
-      this_date.setDate(date.getDate() - offset);
-      var year = this_date.getFullYear(),
-          month = ('0' + (this_date.getMonth() + 1)).slice(-2),
-          day = ('0' + this_date.getDate()).slice(-2);
-      return year + '-' + month + '-' + day
-    }
 
     $(function() {
-      $('#start-date').attr({
-        'value': get_date(DEFAULT_OFFSET),
-        'min': get_date(90)
-      });
-      $('#end-date').attr('value', get_date());
       $('#tag-search').submit(function(e) {
         var params = $('#tag-search').serialize();
         var tag = $('#search').val();
@@ -99,14 +82,10 @@
       </div>
       <div class="row">
 	<div class="six columns">
-	  <label for="start-date">Start date</label>
-	  <input type="date" class="u-full-width" id="start-date" name="start-date" value="2015-04-10">
           <label for="lang">Two letter lanugage code</label>
           <input class"u-full-width" type="text" id="lang" name="lang" placeholder="??" value="en" maxlength="2">
 	</div>
 	<div class="six columns">
-	  <label for="end-date">End date</label>
-	  <input type="date" class="u-full-width" id="end-date" name="end-date" value=>
 	</div>
       </div>
       <div class="row">
