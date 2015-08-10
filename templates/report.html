@@ -46,6 +46,11 @@
 
     color: #9E9E9E;
   }
+  .results {
+    text-align: center;
+    font-size: 90%;
+    font-style: italic;
+  }
   .page-footer {
     text-align: center;
     font-size: 85%;
@@ -88,12 +93,13 @@
 	<div class="info">
 	  <div class="row">
 	    <div class="two-thirds column">
-	      <h2>{tag}</h2>
+	      <h2>{?tag}#{tag}{:else}All tags{/tag}</h2>
+	      <p>{stats.oldest} - {stats.newest}</p>
 	    </div>
 	    <div class="one-third column">
-	      <p>{total_revs} revisions</p>
-	      <p>{total_users} users</p>
-	      <p>{total_bytes} bytes changed</p>
+	      <p>{stats.revisions} revisions on {stats.pages} pages</p>
+	      <p>{stats.users} users</p>
+	      <p>{stats.bytes} bytes changed</p>
 	    </div>
 	  </div>
 	</div>
@@ -121,7 +127,26 @@
           {/revisions}
           </tbody>
         </table>
-	<a href="/hashtags" class="u-full-width button">Back</a>
+      </div>
+      <div class="row results">
+	<p>{page.start} - {page.end} of {stats.revisions} results</p>
+      </div>
+      <div class="row">
+	<div class="one-half column">
+	  {@gte key=page.prev value=0}
+	  <a href="/hashtags/search/{?tag}{tag}{:else}all{/tag}/{page.prev}" class="u-full-width button">< previous</a>
+          {:else}
+	  &nbsp;
+	  {/gte}
+	</div>
+	<div class="one-half column">
+	  {@gt key=page.next value=0}
+	  <a href="/hashtags/search/{?tag}{tag}{:else}all{/tag}/{page.next}" class="u-full-width button">next > </a>
+	  {:else}
+	  &nbsp;
+	  {/gt}
+	</div>
+	<a href="/hashtags" class="u-full-width button">Home</a>
       </div>
     </div>
   </div>

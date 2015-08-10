@@ -10,12 +10,14 @@ from clastic.static import StaticApplication
 from boltons.strutils import find_hashtags
 from boltons.tbutils import ExceptionInfo
 
-from dal import (get_hashtags, get_all_hashtags, get_top_hashtags)
+from dal import HashtagDatabaseConnection
+from common import PAGINATION
 
-FLUP_LOG_DIR = os.path.expanduser('~')
+
+Database = HashtagDatabaseConnection()
+
 TEMPLATES_PATH = 'templates'
 STATIC_PATH = 'static'
-
 _CUR_PATH = os.path.dirname(__file__)
 
 
@@ -25,7 +27,7 @@ def format_timestamp(timestamp):
     return timestamp.strftime('%d %b %Y %H:%M:%S')
 
 
-def process_revs(rev):
+def format_revs(rev):
     url_str = 'https://%s.wikipedia.org/wiki/?diff=%s&oldid=%s'
     rev['spaced_title'] = rev.get('rc_title', '').replace('_', ' ')
     rev['diff_size'] = rev['rc_new_len'] - rev['rc_old_len']
@@ -42,25 +44,56 @@ def process_revs(rev):
     return rev
 
 
+def calculate_pages(offset, total, pagination):
+    # Check if there is a previous page
+    if offset == 0:
+        prev = -1
+    elif (offset - pagination) < 0:
+        prev = 0
+    else:
+        prev = offset - pagination
+    # Check if there is a next page
+    if (offset + pagination) >= total:
+        next = -1
+    else:
+        next = offset + pagination
+    return prev, next
+
+
+def format_stats(stats):
+    stats['bytes'] = '{:,}'.format(int(stats['bytes']))
+    stats['revisions'] = '{:,}'.format(stats['revisions'])
+    stats['pages'] = '{:,}'.format(stats['pages'])
+    stats['users'] = '{:,}'.format(stats['users'])
+    stats['newest'] = format_timestamp(stats['newest'])
+    stats['oldest'] = format_timestamp(stats['oldest'])
+    return stats
+
+
 def home():
-    top_tags = get_top_hashtags()
+    top_tags = Database.get_top_hashtags()
     return {'top_tags': top_tags}
 
 
 def generate_report(request, tag=None, offset=0):
+    offset = int(offset)
     if tag:
-        revs = get_hashtags(tag.lower(), offset)
-        tag = '#' + tag
-    else:
-        revs = get_all_hashtags()
-        tag = 'All hashtags'
-    ret = [process_revs(rev) for rev in revs]
-    users = set([r['rc_user_text'] for r in ret])
+        tag = tag.lower()
+    revs = Database.get_hashtags(tag, offset)
+    stats = Database.get_hashtag_stats(tag)
+    stats = format_stats(stats[0])
+    ret = [format_revs(rev) for rev in revs]
+    prev, next = calculate_pages(offset, 
+                                 int(stats['revisions'].replace(',', '')),
+                                 PAGINATION)
+    page = {'start': offset, 
+            'end': offset + len(revs),
+            'prev': prev,
+            'next': next}
     return {'revisions': ret, 
             'tag': tag, 
-            'total_revs': len(ret),
-            'total_users': len(users),
-            'total_bytes': '{:,}'.format(sum([abs(r['diff_size']) for r in ret]))}
+            'stats': stats,
+            'page': page}
 
 
 def create_app():
@@ -68,10 +101,10 @@ def create_app():
     _static_dir = os.path.join(_CUR_PATH, STATIC_PATH)
     templater = AshesRenderFactory(_template_dir)
     # TODO: Add support for @mentions
-    # TODO: Add a list of the most popular tags/mentions on the front page
     routes = [('/', home, 'index.html'),
               ('/search/', generate_report, 'report.html'),
               ('/search/all', generate_report, 'report.html'),
+              ('/search/all/<offset>', generate_report, 'report.html'),
               ('/search/<tag>', generate_report, 'report.html'),
               ('/search/<tag>/<offset>', generate_report, 'report.html'),
               ('/static', StaticApplication(_static_dir)),

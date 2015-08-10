@@ -44,6 +44,9 @@
     font-size: 1em;
     font-weight: 600;
   }
+  .all-tags {
+    background-color: #F1F1F1;
+  }
 
   </style>
 
@@ -72,40 +75,37 @@
   </div>
   <div class="container">
     <div cass="row">
-      <div class="nine columns">
-    <form id="tag-search">
-      <div class="row">
-	<div class="twelve columns">
-	  <label for="search">Hashtag</label>
-          <input class="u-full-width" type="search" placeholder="Which tag?" id="search">
-	</div>
+      <div class="eight columns">
+	<form id="tag-search">
+	  <div class="row">
+	    <div class="twelve columns">
+	      <label for="search">Search</label>
+              <input class="u-full-width" type="search" placeholder="Enter a hashtag or @mention" id="search">
+	    </div>
+	  </div>
+	  <div class="row">
+	    <div class="six columns">
+	      <input class="button-primary" type="submit" value="Submit">
+	    </div>
+	  </div>
+	</form>
       </div>
-      <div class="row">
-	<div class="six columns">
-          <label for="lang">Two letter lanugage code</label>
-          <input class"u-full-width" type="text" id="lang" name="lang" placeholder="??" value="en" maxlength="2">
-	</div>
-	<div class="six columns">
-	</div>
-      </div>
-      <div class="row">
-	<div class="six columns">
-	  <input class="button-primary" type="submit" value="Submit">
-	  <p><a class="button" href="/hashtags/search/all">Show all hashtags</a></p>
-	</div>
-      </div>
-    </form>
-    </div>
-      <div class="three columns">
+      <div class="four columns">
 	<div class="info">
-	<h3>Top tags</h3>
-	<ol>
-	  {#top_tags}
-	  <li><a href="/hashtags/search/{ht_text}">#{ht_text}</a> ({count})</li>
-	  {/top_tags}
-	</ol>
+	  <h3>Popular tags</h3>
+	  <ol>
+	    {#top_tags}
+	    <li><a href="/hashtags/search/{ht_text}">#{ht_text}</a> ({count})</li>
+	    {/top_tags}
+	  </ol>
 	</div>
+	<p></p>
+	<p><a class="u-full-width button all-tags" href="/hashtags/search/all">Show all hashtags</a></p>
       </div>
+    </div>
+    <div class="row">
+      <p></p>
+      
     </div>
   </div>
 </div>
