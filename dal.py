@@ -10,6 +10,9 @@ HT_DB_HOST = 's1.labsdb'  # The hashtag table is on the same server as the enwik
 HT_DB_NAME = 's52490__hashtags_p'
 
 
+import logging
+logging.basicConfig(filename='debug.log',level=logging.DEBUG)
+
 CACHE_EXPIRATION = 5 * 60
 _cur_dir = os.path.dirname(__file__)
 _cache_dir = os.path.join(_cur_dir, '../cache')
@@ -38,8 +41,9 @@ class HashtagDatabaseConnection(object):
         cursor = self.connection.cursor(oursql.DictCursor)
         try:
             cursor.execute(query, params)
-        except oursql.OperationError as e:
+        except Exception as e:
             self.connect()  # Reconnecting
+            logging.log(logging.DEBUG, e)
             cursor = self.connection.cursor(oursql.DictCursor)
             cursor.execute(query, params)
         results = cursor.fetchall()
@@ -145,5 +149,39 @@ class HashtagDatabaseConnection(object):
         ON htrc.htrc_id = rc.htrc_id
         JOIN hashtags AS ht
         ON ht.ht_id = htrc.ht_id
-        ORDER BY rc.rc_id DESC'''
-        return self.execute(query, ())
+        WHERE rc.rc_type = 0
+        AND ht.ht_text NOT IN(%s)
+        AND ht.ht_text REGEXP '[[:alpha:]]+'
+        AND CHAR_LENGTH(ht.ht_text) > 1
+        ORDER BY rc.rc_id DESC''' % ', '.join(['?' for i in range(len(EXCLUDED))])
+        return self.execute(query, EXCLUDED)
+
+    def get_mentions(self, name=None, start=0, end=PAGINATION):
+        if not name:
+            return self.get_all_mentions(start, end)
+        if name and name[0] == '@':
+            tag = tag[1:]
+        query = '''
+        SELECT *
+        FROM recentchanges AS rc
+        JOIN mention_recentchanges AS mnrc
+        ON mnrc.mnrc_id = rc.htrc_id
+        JOIN mentions AS mn
+        ON mn.mn_id = mnrc.mn_id
+        WHERE mn.mn_text = ?
+        ORDER BY rc.rc_id DESC
+        LIMIT ?, ?'''
+        params = (name, start, end)
+        return self.execute(query, params)
+
+    def get_all_mentions(self, start=0, end=PAGINATION):
+        query = '''
+        SELECT *
+        FROM recentchanges AS rc
+        JOIN mention_recentchanges AS mnrc
+        ON mnrc.mnrc_id = rc.htrc_id
+        JOIN mentions AS mn
+        ON mn.mn_id = mnrc.mn_id
+        ORDER BY rc.rc_id DESC
+        LIMIT ?, ?'''
+        return self.execute(query, (start, end))
