@@ -80,6 +80,11 @@ def generate_report(request, tag=None, offset=0):
     if tag:
         tag = tag.lower()
     revs = Database.get_hashtags(tag, offset)
+    if not revs:
+        return {'revisions': [],
+                'tag': tag,
+                'stats': {},
+                'page': {}}
     stats = Database.get_hashtag_stats(tag)
     stats = format_stats(stats[0])
     ret = [format_revs(rev) for rev in revs]
