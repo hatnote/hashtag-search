@@ -64,7 +64,7 @@ class HashtagDatabaseConnection(object):
         JOIN hashtags AS ht
         ON ht.ht_id = htrc.ht_id
         WHERE ht.ht_text = ?
-        ORDER BY rc.rc_id DESC
+        ORDER BY rc.rc_timestamp DESC
         LIMIT ?, ?'''
         params = (tag, start, end)
         return self.execute(query, params)
@@ -122,6 +122,7 @@ class HashtagDatabaseConnection(object):
         SELECT COUNT(*) as revisions,
         COUNT(DISTINCT rc_user) as users,
         COUNT(DISTINCT rc_title) as pages,
+        COUNT(DISTINCT htrc_lang) as langs,
         MIN(rc_timestamp) as oldest,
         MAX(rc_timestamp) as newest,
         SUM(ABS(rc_new_len - rc_old_len)) as bytes

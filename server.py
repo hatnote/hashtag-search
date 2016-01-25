@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
 import os
+import logging
 from datetime import datetime, timedelta
 
 from clastic import Application, render_basic, Middleware
 from clastic.meta import MetaApplication
 from clastic.render import AshesRenderFactory
 from clastic.static import StaticApplication
+
+from ashes import escape_html
 
 from boltons.strutils import find_hashtags
 from boltons.tbutils import ExceptionInfo
@@ -28,14 +31,24 @@ def format_timestamp(timestamp):
 
 
 def format_revs(rev):
-    url_str = 'https://%s.wikipedia.org/wiki/?diff=%s&oldid=%s'
+    url_str = 'https://{lang}.wikipedia.org/wiki/?diff={this}&oldid={last}'
+    user_url = 'https://{lang}.wikipedia.org/wiki/User:{user}'
+    if rev['htrc_lang'] == 'wikidata':
+        url_str = 'https://www.wikidata.org/wiki/?diff={this}&oldid={last}'
+        user_url = 'https://www.wikidata.org/wiki/User:{user}'
+    rev['rc_user_url'] = user_url.format(lang=rev['htrc_lang'],
+                                         user=rev['rc_user_text'])
     rev['spaced_title'] = rev.get('rc_title', '').replace('_', ' ')
     rev['diff_size'] = rev['rc_new_len'] - rev['rc_old_len']
     rev['date'] = format_timestamp(rev['rc_timestamp'])
-    rev['diff_url'] = url_str % (rev['htrc_lang'],
-                                 rev['rc_this_oldid'],
-                                 rev['rc_last_oldid'])
+    rev['diff_url'] = url_str.format(lang=rev['htrc_lang'],
+                                     this=rev['rc_this_oldid'],
+                                     last=rev['rc_last_oldid'])
     rev['tags'] = find_hashtags(rev['rc_comment'])
+    try:
+        rev['rc_comment'] = escape_html(rev['rc_comment'])
+    except Exception as e:
+        logging.exception('escaping exception')
     for tag in rev['tags']:
         # TODO: Turn @mentions into links
         link = '<a href="/hashtags/search/%s">#%s</a>' % (tag, tag)
