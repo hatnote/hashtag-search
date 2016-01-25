@@ -93,6 +93,8 @@ def generate_report(request, tag=None, offset=0):
     if tag:
         tag = tag.lower()
     revs = Database.get_hashtags(tag, offset)
+    # TODO: Get RevScore per rev
+    # see https://meta.wikimedia.org/wiki/Objective_Revision_Evaluation_Service
     if not revs:
         return {'revisions': [],
                 'tag': tag,
