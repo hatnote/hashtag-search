@@ -67,11 +67,24 @@
   h2 {
     font-size: 2rem;
   }
+  form {
+    margin-bottom: 0;
+  }
   </style>
 
   <script>
   $(function() {
     $('#rc-table').tablesorter(); 
+    $('#tag-search').submit(function(e) {
+      var lang = $('#lang').val();
+      if (lang) {
+        lang = '?lang=' + lang;
+      }
+      var tag = $('#search').val();
+      // TODO: remove starting #
+      window.location.href = '/hashtags/search/' + tag + lang;
+      e.preventDefault();
+    });
   });
   </script>
 
@@ -88,6 +101,24 @@
     </div>
   </div>
   <div class="container">
+    <form id="tag-search">
+      <div class="row">
+	<div class="seven columns">
+          <input class="u-full-width" type="search" placeholder="Enter a hashtag or @mention" id="search" value="{tag}">
+	</div>
+	<div class="two columns">
+          <select class="u-full-width" id="lang">
+	    <option value="" selected="selected">All</option>
+	    {#langs}
+	    <option value="{.}">{.}</option>
+	    {/langs}
+	  </select>
+	</div>
+	<div class="three columns">
+	  <input class="button-primary" type="submit" value="Submit">
+	</div>
+      </div>
+    </form>
     <div class="row">
       <div class="full width">
 	<div class="info">
@@ -100,7 +131,7 @@
 	      <p>{stats.revisions} revisions on {stats.pages} pages</p>
 	      <p>{stats.users} users</p>
 	      <p>{stats.bytes} bytes changed</p>
-	      <p>{stats.langs} lanugage{@gt key=stats.langs value=1}s{/gt}</p>
+	      <p>{stats.langs} language{@gt key=stats.langs value=1}s{/gt}</p>
 	    </div>
 	  </div>
 	</div>
@@ -137,14 +168,14 @@
       <div class="row">
 	<div class="one-half column">
 	  {@gte key=page.prev value=0}
-	  <a href="/hashtags/search/{?tag}{tag}{:else}all{/tag}/{page.prev}" class="u-full-width button">< previous</a>
+	  <a href="/hashtags/search/{?tag}{tag}{:else}all{/tag}/{page.prev}{?lang}?lang={lang}{/lang}" class="u-full-width button">< previous</a>
           {:else}
 	  &nbsp;
 	  {/gte}
 	</div>
 	<div class="one-half column">
 	  {@gt key=page.next value=0}
-	  <a href="/hashtags/search/{?tag}{tag}{:else}all{/tag}/{page.next}" class="u-full-width button">next > </a>
+	  <a href="/hashtags/search/{?tag}{tag}{:else}all{/tag}/{page.next}{?lang}?lang={lang}{/lang}" class="u-full-width button">next > </a>
 	  {:else}
 	  &nbsp;
 	  {/gt}

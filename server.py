@@ -85,22 +85,26 @@ def format_stats(stats):
 
 def home():
     top_tags = Database.get_top_hashtags()
-    return {'top_tags': top_tags}
+    langs = Database.get_langs()
+    return {'top_tags': top_tags,
+            'langs': [l['htrc_lang'] for l in langs]}
 
 
 def generate_report(request, tag=None, offset=0):
+    lang = request.values.get('lang')
     offset = int(offset)
     if tag:
         tag = tag.lower()
-    revs = Database.get_hashtags(tag, offset)
+    revs = Database.get_hashtags(tag, lang=lang, start=offset)
     # TODO: Get RevScore per rev
-    # see https://meta.wikimedia.org/wiki/Objective_Revision_Evaluation_Service
+    # https://meta.wikimedia.org/wiki/Objective_Revision_Evaluation_Service
     if not revs:
         return {'revisions': [],
                 'tag': tag,
                 'stats': {},
-                'page': {}}
-    stats = Database.get_hashtag_stats(tag)
+                'page': {},
+                'lang': lang}
+    stats = Database.get_hashtag_stats(tag, lang=lang)
     stats = format_stats(stats[0])
     ret = [format_revs(rev) for rev in revs]
     prev, next = calculate_pages(offset, 
@@ -113,7 +117,8 @@ def generate_report(request, tag=None, offset=0):
     return {'revisions': ret, 
             'tag': tag, 
             'stats': stats,
-            'page': page}
+            'page': page,
+            'lang': lang}
 
 
 def create_app():

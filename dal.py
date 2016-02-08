@@ -5,6 +5,8 @@ import werkzeug.contrib.cache
 from common import (EXCLUDED, PAGINATION)
 
 
+from log import tlog
+
 DB_CONFIG_PATH = os.path.expanduser('~/replica.my.cnf')
 HT_DB_HOST = 's1.labsdb'  # The hashtag table is on the same server as the enwiki db replica
 HT_DB_NAME = 's52490__hashtags_p'
@@ -24,12 +26,14 @@ class HashtagDatabaseConnection(object):
         self.connect()
 
     def connect(self, read_default_file=DB_CONFIG_PATH):
-        self.connection = oursql.connect(db=HT_DB_NAME,
-                                         host=HT_DB_HOST,
-                                         read_default_file=read_default_file,
-                                         charset=None,
-                                         use_unicode=False,
-                                         autoping=True)
+        with tlog.critical('connect') as rec:
+            self.connection = oursql.connect(db=HT_DB_NAME,
+                                             host=HT_DB_HOST,
+                                             read_default_file=read_default_file,
+                                             charset=None,
+                                             use_unicode=False,
+                                             autoping=True)
+            rec.success('Connected to database')
 
     def execute(self, query, params, cache_name=None):
         if cache_name:
@@ -50,12 +54,18 @@ class HashtagDatabaseConnection(object):
         if cache_name:
             Cache.set(cache_name, results, timeout=CACHE_EXPIRATION)
         return results
-        
-    def get_hashtags(self, tag=None, start=0, end=PAGINATION):
+
+    def get_hashtags(self, 
+                     tag=None, 
+                     lang=None, 
+                     start=0, 
+                     end=PAGINATION):
         if not tag:
             return self.get_all_hashtags(start, end)
         if tag and tag[0] == '#':
             tag = tag[1:]
+        if not lang:
+            lang = '%'
         query = '''
         SELECT *
         FROM recentchanges AS rc
@@ -64,12 +74,17 @@ class HashtagDatabaseConnection(object):
         JOIN hashtags AS ht
         ON ht.ht_id = htrc.ht_id
         WHERE ht.ht_text = ?
+        AND rc.htrc_lang LIKE ?
         ORDER BY rc.rc_timestamp DESC
         LIMIT ?, ?'''
-        params = (tag, start, end)
-        return self.execute(query, params)
+        params = (tag, lang, start, end)
+        with tlog.critical('get_hashtags') as rec:
+            ret = self.execute(query, params)
+            rec.success('Fetched revisions tagged with {tag}',
+                        tag=tag)
+            return ret
 
-    def get_all_hashtags(self, start=0, end=PAGINATION):
+    def get_all_hashtags(self, lang=None, start=0, end=PAGINATION):
         """Rules for hashtags: 
         1. Does not include MediaWiki magic words
         (like #REDIRECT) or parser functions
@@ -77,6 +92,8 @@ class HashtagDatabaseConnection(object):
         3. Must contain at least one non-numeric
         character.
         """
+        if not lang:
+            lang = '%'
         query = '''
         SELECT *
         FROM recentchanges AS rc
@@ -85,13 +102,18 @@ class HashtagDatabaseConnection(object):
         JOIN hashtags AS ht
         ON ht.ht_id = htrc.ht_id
         WHERE rc.rc_type = 0
+        AND rc.htrc_lang LIKE ?
         AND ht.ht_text NOT IN(%s)
         AND ht.ht_text REGEXP '[[:alpha:]]+'
         AND CHAR_LENGTH(ht.ht_text) > 1
         ORDER BY rc.rc_id DESC
         LIMIT ?, ?''' % ', '.join(['?' for i in range(len(EXCLUDED))])
-        params = EXCLUDED + (start, end)
-        return self.execute(query, params)
+        params = (lang,) + EXCLUDED + (start, end)
+        with tlog.critical('get_all_hashtags') as rec:
+            ret = self.execute(query, params)
+            rec.success('Fetched all hashtags starting at {start}',
+                        start=start)
+            return ret
 
     def get_top_hashtags(self, limit=10):
         query = '''
@@ -111,13 +133,30 @@ class HashtagDatabaseConnection(object):
         params = EXCLUDED + (limit,)
         # This query is cached because it's loaded for each visit to
         # the index page
-        return self.execute(query, params, cache_name='top-tags')
+        with tlog.critical('get_top_hashtags') as rec:
+            ret = self.execute(query, params, cache_name='top-tags')
+            rec.success('Fetched top tags with limit of {limit}',
+                        limit=limit)
+            return ret
 
-    def get_hashtag_stats(self, tag):
+    def get_langs(self):
+        query = '''
+        SELECT htrc_lang
+        FROM recentchanges
+        GROUP BY htrc_lang'''
+        params = ()
+        with tlog.critical('get_langs') as rec:
+            ret = self.execute(query, params, cache_name='langs')
+            rec.success('Fetched available languages')
+            return ret
+
+    def get_hashtag_stats(self, tag, lang=None):
         if not tag:
             return self.get_all_hashtag_stats()
         if tag and tag[0] == '#':
             tag = tag[1:]
+        if not lang:
+            lang = '%'
         query = '''
         SELECT COUNT(*) as revisions,
         COUNT(DISTINCT rc_user) as users,
@@ -132,12 +171,19 @@ class HashtagDatabaseConnection(object):
         JOIN hashtags AS ht
         ON ht.ht_id = htrc.ht_id
         WHERE ht.ht_text = ?
+        AND rc.htrc_lang LIKE ?
         ORDER BY rc.rc_id DESC'''
-        params = (tag,)
-        return self.execute(query, params)
+        params = (tag, lang)
+        with tlog.critical('get_hashtag_stats') as rec:
+            ret = self.execute(query, params)
+            rec.success('Fetched stats for {tag}',
+                        tag=tag)
+            return ret
 
-    def get_all_hashtag_stats(self):
+    def get_all_hashtag_stats(self, lang=None):
         # TODO: Add conditions here
+        if not lang:
+            lang = '%'
         query = '''
         SELECT COUNT(*) as revisions,
         COUNT(DISTINCT rc_user) as users,
@@ -151,11 +197,15 @@ class HashtagDatabaseConnection(object):
         JOIN hashtags AS ht
         ON ht.ht_id = htrc.ht_id
         WHERE rc.rc_type = 0
+        AND rc.htrc_lang LIKE ?
         AND ht.ht_text NOT IN(%s)
         AND ht.ht_text REGEXP '[[:alpha:]]+'
         AND CHAR_LENGTH(ht.ht_text) > 1
         ORDER BY rc.rc_id DESC''' % ', '.join(['?' for i in range(len(EXCLUDED))])
-        return self.execute(query, EXCLUDED)
+        with tlog.critical('get_all_hashtag_stats') as rec:
+            ret = self.execute(query, (lang,) + EXCLUDED)
+            rec.success('Fetched all hashtag stats')
+            return ret
 
     def get_mentions(self, name=None, start=0, end=PAGINATION):
         if not name:
