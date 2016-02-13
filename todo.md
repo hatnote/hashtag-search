@@ -5,3 +5,4 @@
  - explain "all hashtags" page
  - check database update logs
  - better homepage
+ - list of all hashtags
