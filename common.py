@@ -13,7 +13,8 @@ hashmark: https://www.mediawiki.org/wiki/Help:Magic_words
 EXCLUDED = ('redirect',
             'ifexist',
             'switch', 
-            'ifexpr')
+            'ifexpr',
+            'if')
 
 # Number of results to display per page
 PAGINATION = 25

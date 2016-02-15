@@ -16,12 +16,17 @@ from boltons.tbutils import ExceptionInfo
 from dal import HashtagDatabaseConnection
 from common import PAGINATION
 
-
-Database = HashtagDatabaseConnection()
+from log import tlog
 
 TEMPLATES_PATH = 'templates'
 STATIC_PATH = 'static'
 _CUR_PATH = os.path.dirname(__file__)
+
+
+Database = HashtagDatabaseConnection()
+
+import logging
+logging.basicConfig(filename='debug.log',level=logging.DEBUG)
 
 
 def format_timestamp(timestamp):
@@ -84,8 +89,15 @@ def format_stats(stats):
 
 
 def home():
-    top_tags = Database.get_top_hashtags()
-    langs = Database.get_langs()
+    with tlog.critical('home') as rec:
+        top_tags = Database.get_top_hashtags()
+        for tag in top_tags:
+            # TODO: cleaner data input
+            tag['ht_text'] = tag['ht_text'].decode('utf8', errors='replace')
+
+        langs = Database.get_langs()
+        rec.success('Homepage ready')
+
     return {'top_tags': top_tags,
             'langs': [l['htrc_lang'] for l in langs]}
 
