@@ -33,7 +33,6 @@ class HashtagDatabaseConnection(object):
                                              charset=None,
                                              use_unicode=False,
                                              autoping=True)
-            rec.success('Connected to database')
 
     def execute(self, query, params, cache_name=None):
         if cache_name:
@@ -55,10 +54,10 @@ class HashtagDatabaseConnection(object):
             Cache.set(cache_name, results, timeout=CACHE_EXPIRATION)
         return results
 
-    def get_hashtags(self, 
-                     tag=None, 
-                     lang=None, 
-                     start=0, 
+    def get_hashtags(self,
+                     tag=None,
+                     lang=None,
+                     start=0,
                      end=PAGINATION):
         if not tag:
             return self.get_all_hashtags(start, end)
@@ -85,7 +84,7 @@ class HashtagDatabaseConnection(object):
             return ret
 
     def get_all_hashtags(self, lang=None, start=0, end=PAGINATION):
-        """Rules for hashtags: 
+        """Rules for hashtags:
         1. Does not include MediaWiki magic words
         (like #REDIRECT) or parser functions
         2. Must be longer than one character
@@ -116,20 +115,27 @@ class HashtagDatabaseConnection(object):
             return ret
 
     def get_top_hashtags(self, limit=10):
-        query = '''
-        SELECT ht.ht_text, COUNT(*) as count
-        FROM recentchanges AS rc
-        JOIN hashtag_recentchanges AS htrc
-        ON htrc.htrc_id = rc.htrc_id
-        JOIN hashtags AS ht
-        ON ht.ht_id = htrc.ht_id
-        WHERE ht.ht_text REGEXP '[[:alpha:]]{1}[[:alnum:]]*'
-        AND ht.ht_text NOT IN(%s)
-        AND ht.ht_text REGEXP '[[:alpha:]]+'
-        AND CHAR_LENGTH(ht.ht_text) > 1
-        GROUP BY ht.ht_text
-        ORDER BY COUNT(*) DESC
-        LIMIT ?'''  % ', '.join(['?' for i in range(len(EXCLUDED))])
+        """Gets the top hashtags from an arbitrarily "recent" group of edits
+        (not all time).
+        """
+        excluded_p = ', '.join(['?' for i in range(len(EXCLUDED))])
+        query_tmpl = '''
+        SELECT ht.ht_text,
+               COUNT(ht.ht_text) AS count
+        FROM   recentchanges AS rc
+               JOIN hashtag_recentchanges AS htrc
+                 ON htrc.htrc_id = rc.htrc_id
+                    AND rc.htrc_id > (SELECT MAX(htrc_id)
+                                      FROM   recentchanges) - {recent_count}
+               JOIN hashtags AS ht
+                 ON ht.ht_id = htrc.ht_id
+        WHERE  ht.ht_text REGEXP '[[:alpha:]]{1}[[:alnum:]]+'
+        AND    ht.ht_text NOT IN ({excluded_p})
+        GROUP  BY ht.ht_text
+        ORDER  BY count DESC
+        LIMIT  ?;'''
+        query = query_tmpl.format(recent_count=20000,
+                                  excluded_p=excluded_p)
         params = EXCLUDED + (limit,)
         # This query is cached because it's loaded for each visit to
         # the index page
