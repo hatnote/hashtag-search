@@ -18,3 +18,5 @@ EXCLUDED = ('redirect',
 
 # Number of results to display per page
 PAGINATION = 25
+MAX_DB_ROW = 18446744073709551615  # "some large number" for all rows
+# See http://dev.mysql.com/doc/refman/5.0/en/select.html#id4651990

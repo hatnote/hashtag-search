@@ -12,9 +12,6 @@ HT_DB_HOST = 's1.labsdb'  # The hashtag table is on the same server as the enwik
 HT_DB_NAME = 's52467__hashtags'
 
 
-import logging
-logging.basicConfig(filename='debug.log',level=logging.DEBUG)
-
 CACHE_EXPIRATION = 5 * 60
 _cur_dir = os.path.dirname(__file__)
 _cache_dir = os.path.join(_cur_dir, '../cache')
@@ -46,7 +43,6 @@ class HashtagDatabaseConnection(object):
             cursor.execute(query, params)
         except Exception as e:
             self.connect()  # Reconnecting
-            logging.log(logging.DEBUG, e)
             cursor = self.connection.cursor(oursql.DictCursor)
             cursor.execute(query, params)
         results = cursor.fetchall()
@@ -126,16 +122,16 @@ class HashtagDatabaseConnection(object):
                JOIN hashtag_recentchanges AS htrc
                  ON htrc.htrc_id = rc.htrc_id
                     AND rc.htrc_id > (SELECT MAX(htrc_id)
-                                      FROM   recentchanges) - {recent_count}
+                                      FROM   recentchanges) - %s
                JOIN hashtags AS ht
                  ON ht.ht_id = htrc.ht_id
         WHERE  ht.ht_text REGEXP '[[:alpha:]]{1}[[:alnum:]]+'
-        AND    ht.ht_text NOT IN ({excluded_p})
+        AND    ht.ht_text NOT IN (%s)
         GROUP  BY ht.ht_text
         ORDER  BY count DESC
         LIMIT  ?;'''
-        query = query_tmpl.format(recent_count=20000,
-                                  excluded_p=excluded_p)
+        recent_count = 20000
+        query = query_tmpl % (recent_count, excluded_p)
         params = EXCLUDED + (limit,)
         # This query is cached because it's loaded for each visit to
         # the index page

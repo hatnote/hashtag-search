@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
-import logging
+import io
+import csv
 from datetime import datetime, timedelta
 
 from clastic import Application, render_basic, Middleware
@@ -13,8 +14,8 @@ from ashes import escape_html
 from boltons.strutils import find_hashtags
 from boltons.tbutils import ExceptionInfo
 
-from dal import HashtagDatabaseConnection
-from common import PAGINATION
+from dal import HashtagDatabaseConnection 
+from common import PAGINATION, MAX_DB_ROW
 
 from log import tlog
 
@@ -24,9 +25,6 @@ _CUR_PATH = os.path.dirname(__file__)
 
 
 Database = HashtagDatabaseConnection()
-
-import logging
-logging.basicConfig(filename='debug.log',level=logging.DEBUG)
 
 
 def format_timestamp(timestamp):
@@ -53,7 +51,7 @@ def format_revs(rev):
     try:
         rev['rc_comment'] = escape_html(rev['rc_comment'])
     except Exception as e:
-        logging.exception('escaping exception')
+        pass
     for tag in rev['tags']:
         # TODO: Turn @mentions into links
         link = '<a href="/hashtags/search/%s">#%s</a>' % (tag, tag)
@@ -102,6 +100,20 @@ def home():
             'langs': [l['htrc_lang'] for l in langs]}
 
 
+def generate_csv(request, tag):
+    lang = request.values.get('lang')
+    tag = tag.lower()
+    revs = Database.get_hashtags(tag, lang=lang, end=MAX_DB_ROW)
+    output = io.BytesIO()
+    writer = csv.writer(output)
+    for rev in revs:
+        # TODO: better organization
+        formatted_rev = format_revs(rev)
+        writer.writerow(formatted_rev.values())
+    ret = output.getvalue()
+    return ret
+
+
 def generate_report(request, tag=None, offset=0):
     lang = request.values.get('lang')
     offset = int(offset)
@@ -143,6 +155,7 @@ def create_app():
               ('/search/all', generate_report, 'report.html'),
               ('/search/all/<offset>', generate_report, 'report.html'),
               ('/search/<tag>', generate_report, 'report.html'),
+              ('/csv/<tag>', generate_csv, render_basic),
               ('/search/<tag>/<offset>', generate_report, 'report.html'),
               ('/static', StaticApplication(_static_dir)),
               ('/meta/', MetaApplication())]
