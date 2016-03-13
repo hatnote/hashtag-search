@@ -9,60 +9,11 @@
 
   <link rel="stylesheet" href="/hashtags/static/css/normalize.css">
   <link rel="stylesheet" href="/hashtags/static/css/skeleton.css">
+  <link rel="stylesheet" href="/hashtags/static/css/style.css">
 
   <script type="text/javascript" src="/hashtags/static/js/jquery.js"></script> 
+  <script type="text/javascript" src="/hashtags/static/js/search.js"></script> 
 
-  <style>
-  .page-header {
-    color: #404040;
-    background: #f8f8f8;
-    margin: 0 0 1em 0;
-    border-bottom: 1px solid #d8e6ec;
-  }
-  .page-header p, .page-header a {
-    color: #999;
-  }
-  .page-header a:hover {
-    color: #1EAEDB;
-  }
-  .page-footer {
-    margin-top: 1em;
-    text-align: center;
-    font-size: 85%;
-    color: #999;
-  }
-  .info {
-    border: 1px solid #E1E1E1;
-    border-radius: 4px;
-    padding: 1.5rem 2rem;
-    margin: 0 0.2rem;
-  }
-  .info ol {
-    margin-bottom: 0;
-  }
-  .info h3 {
-    font-size: 1em;
-    font-weight: 600;
-  }
-  .all-tags {
-    background-color: #F1F1F1;
-  }
-
-  </style>
-
-  <script>
-    $(function() {
-      $('#tag-search').submit(function(e) {
-        var lang = $('#lang').val();
-        if (lang) {
-          lang = '?lang=' + lang;
-        }
-        var tag = $('#search').val();
-        window.location.href = '/hashtags/search/' + tag + lang;
-        e.preventDefault();
-      });
-    });
-  </script>
 </head>
 <body>
   <div class="section page-header">
@@ -82,7 +33,7 @@
 	  <div class="row">
 	    <div class="nine columns">
 	      <label for="search">Search</label>
-              <input class="u-full-width" type="search" placeholder="Enter a hashtag or @mention" id="search">
+              <input class="u-full-width" type="search" placeholder="Enter a hashtag" id="search">
 	    </div>
 	    <div class="three columns">
 	      <label for="lang">Language</label>

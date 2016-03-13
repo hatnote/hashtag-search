@@ -206,8 +206,7 @@ class HashtagDatabaseConnection(object):
         WHERE rc.rc_type = 0
         AND rc.htrc_lang LIKE ?
         AND ht.ht_text NOT IN(%s)
-        AND ht.ht_text REGEXP '[[:alpha:]]+'
-        AND CHAR_LENGTH(ht.ht_text) > 1''' % ', '.join(['?' for i in range(len(EXCLUDED))])
+        AND ht.ht_text REGEXP '[[:alpha:]]+' ''' % ', '.join(['?' for i in range(len(EXCLUDED))])
         with tlog.critical('get_all_hashtag_stats') as rec:
             ret = self.execute(query, (lang,) + EXCLUDED)
             rec.success('Fetched all hashtag stats')

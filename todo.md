@@ -1,9 +1,7 @@
 # TODO items
- - Export CSV
- - Homepage doodle
- - verify punctuation in tags
- - explain "all hashtags" page
- - check database update logs
+ - make "all hashtags" page
+ - hashtag search logs display
+ - css @media query for small screens
+ - no results page
+ - speed up the stats for all hashtags
  - better homepage
- - list of all hashtags
- - next does not work on the all hashtags page
