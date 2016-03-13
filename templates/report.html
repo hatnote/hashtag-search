@@ -53,6 +53,9 @@
 	</div>
       </div>
     </form>
+    {^revisions}
+    <p class="no-results">No revisions tagged with <strong>#{tag}</strong> (yet){?lang} in {lang}{/lang}.</p>
+    {:else}
     <div class="row">
       <div class="full width">
 	<div class="info">
@@ -135,8 +138,9 @@
 
       </div>
     </div>
+    {/revisions}
   </div>
-<div class="section page-footer">
+  <div class="section page-footer">
   <div class="container">
     <div class="row">
       <div class="full width">

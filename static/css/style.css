@@ -114,6 +114,11 @@ form {
     font-weight: normal;
     color: #999;
 }
+.no-results {
+    text-align: center;
+    font-size: 150%;
+    margin: 5em;
+}
 
 @media (max-width: 800px) {
     input.button-primary {
