@@ -31,19 +31,19 @@ class HashtagDatabaseConnection(object):
                                              use_unicode=False,
                                              autoping=True)
 
-    def execute(self, query, params, cache_name=None):
+    def execute(self, query, params, cache_name=None, show_tables=False):
         if cache_name:
             results = Cache.get(cache_name)
             if results:
                 return results
         if not self.connection:
             self.connect()
-        cursor = self.connection.cursor(oursql.DictCursor)
+        cursor = self.connection.cursor(oursql.DictCursor, show_table=show_tables)
         try:
             cursor.execute(query, params)
         except Exception as e:
             self.connect()  # Reconnecting
-            cursor = self.connection.cursor(oursql.DictCursor)
+            cursor = self.connection.cursor(oursql.DictCursor, show_table=show_tables)
             cursor.execute(query, params)
         results = cursor.fetchall()
         if cache_name:
@@ -241,3 +241,15 @@ class HashtagDatabaseConnection(object):
         ORDER BY rc.rc_id DESC
         LIMIT ?, ?'''
         return self.execute(query, (start, end))
+
+    def get_run_log(self, limit=50000):
+        query = '''
+        SELECT *
+        FROM start_log AS sl 
+        JOIN complete_log AS cl 
+        ON sl.run_uuid = cl.run_uuid 
+        WHERE cl.complete_timestamp > DATE_SUB(NOW(), INTERVAL 3 DAY)
+        ORDER BY cl.complete_timestamp DESC
+        LIMIT ?'''
+        with tlog.critical('get_run_log') as rec:
+            return self.execute(query, (limit,), show_tables=True)

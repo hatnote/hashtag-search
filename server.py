@@ -2,9 +2,11 @@
 import os
 import io
 import csv
+import json
 from datetime import datetime, timedelta
+from collections import defaultdict
 
-from clastic import Application, render_basic, Middleware
+from clastic import Application, render_json, render_basic, Middleware
 from clastic.meta import MetaApplication
 from clastic.render import AshesRenderFactory
 from clastic.static import StaticApplication
@@ -108,6 +110,42 @@ def home():
             'langs': [l['htrc_lang'] for l in langs]}
 
 
+def generate_run_log():
+    ret = {'logs': [], 'date': datetime.now().strftime('%e %b %Y %H:%M:%S')}
+    run_logs = Database.get_run_log()
+    sorted_logs = defaultdict(list)
+    for run_log in run_logs:
+        lang = run_log['cl.lang']
+        if len(sorted_logs[lang]) > 0:
+            prev_log = sorted_logs[lang][-1]
+            prev_date = prev_log['cl.complete_timestamp']
+            prev_log['time_diff'] = (prev_date - run_log['cl.complete_timestamp']).total_seconds()
+        try:
+            run_log['json_output'] = json.loads(run_log['cl.output'])
+        except ValueError as e:
+            run_log['json_output'] = {}
+        sorted_logs[lang].append(run_log)
+    for lang, run_logs in sorted_logs.items():
+        results = {'changes_added': 0,
+                   'tags_added': 0,
+                   'mentions_added': 0,
+                   'total_tags': 0,
+                   'total_mentions': 0,
+                   'total_changes': 0}
+        for run_log in run_logs:
+           results['changes_added'] += run_log['json_output'].get('changes_added')
+           results['tags_added'] += run_log['json_output'].get('tags_added')
+           results['mentions_added'] += run_log['json_output'].get('mentions_added')
+           results['total_tags'] += run_log['json_output'].get('total_tags')
+           results['total_mentions'] += run_log['json_output'].get('total_mentions')
+           results['total_changes'] += run_log['json_output'].get('total_changes')
+        ret['logs'].append({'lang': lang,
+                            'count': len(run_logs),
+                            'slow': [l for l in run_logs if l.get('time_diff', 0) > 1800],
+                            'results': results})
+    return ret
+
+
 def generate_csv(request, tag):
     lang = request.values.get('lang')
     limit = request.values.get('limit', 20000)
@@ -150,7 +188,8 @@ def generate_report(request, tag=None, offset=0):
                 'tag': tag,
                 'stats': {},
                 'page': {},
-                'lang': lang}
+                'lang': lang,
+                'langs': [l['htrc_lang'] for l in langs]}
     stats = Database.get_hashtag_stats(tag, lang=lang)
     stats = format_stats(stats[0])
     ret = [format_revs(rev) for rev in revs]
@@ -182,6 +221,7 @@ def create_app():
               ('/search/<tag>', generate_report, 'report.html'),
               ('/csv/<tag>', generate_csv, render_basic),
               ('/search/<tag>/<offset>', generate_report, 'report.html'),
+              ('/logs', generate_run_log, 'logs.html'),
               ('/static', StaticApplication(_static_dir)),
               ('/meta/', MetaApplication())]
     return Application(routes, 
