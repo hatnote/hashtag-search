@@ -11,13 +11,15 @@ from clastic.static import StaticApplication
 
 from ashes import escape_html
 
+from log import tlog
+
 from boltons.strutils import find_hashtags
 from boltons.tbutils import ExceptionInfo
 
 from dal import HashtagDatabaseConnection 
 from common import PAGINATION, MAX_DB_ROW
+from utils import encode_vals, to_unicode
 
-from log import tlog
 
 TEMPLATES_PATH = 'templates'
 STATIC_PATH = 'static'
@@ -27,10 +29,14 @@ _CUR_PATH = os.path.dirname(__file__)
 Database = HashtagDatabaseConnection()
 
 
-def format_timestamp(timestamp):
+def format_timestamp(timestamp, inc_time=True):
     _timestamp_pattern = '%Y%m%d%H%M%S'
     timestamp = datetime.strptime(timestamp, _timestamp_pattern)
-    return timestamp.strftime('%d %b %Y %H:%M:%S')
+    if inc_time:
+        ret = timestamp.strftime('%e %b %Y %H:%M:%S')
+    else:
+        ret = timestamp.strftime('%e %b %Y')
+    return ret
 
 
 def format_revs(rev):
@@ -47,11 +53,13 @@ def format_revs(rev):
     rev['diff_url'] = url_str.format(lang=rev['htrc_lang'],
                                      this=rev['rc_this_oldid'],
                                      last=rev['rc_last_oldid'])
-    rev['tags'] = find_hashtags(rev['rc_comment'])
     try:
         rev['rc_comment'] = escape_html(rev['rc_comment'])
     except Exception as e:
         pass
+    rev['rc_comment_plain'] = rev['rc_comment']
+    rev['rc_comment'] = to_unicode(rev['rc_comment'])
+    rev['tags'] = find_hashtags(rev['rc_comment'])
     for tag in rev['tags']:
         # TODO: Turn @mentions into links
         link = '<a href="/hashtags/search/%s">#%s</a>' % (tag, tag)
@@ -81,8 +89,8 @@ def format_stats(stats):
     stats['revisions'] = '{:,}'.format(stats['revisions'])
     stats['pages'] = '{:,}'.format(stats['pages'])
     stats['users'] = '{:,}'.format(stats['users'])
-    stats['newest'] = format_timestamp(stats['newest'])
-    stats['oldest'] = format_timestamp(stats['oldest'])
+    stats['newest'] = format_timestamp(stats['newest'], inc_time=False)
+    stats['oldest'] = format_timestamp(stats['oldest'], inc_time=False)
     return stats
 
 
@@ -102,14 +110,27 @@ def home():
 
 def generate_csv(request, tag):
     lang = request.values.get('lang')
+    limit = request.values.get('limit', 20000)
     tag = tag.lower()
-    revs = Database.get_hashtags(tag, lang=lang, end=MAX_DB_ROW)
+    tag = tag.encode('utf8')
+    revs = Database.get_hashtags(tag, lang=lang, end=limit)
     output = io.BytesIO()
-    writer = csv.writer(output)
+    fieldnames = ['htrc_lang', 'date', 'diff_url', 'rc_user_text',
+                  'spaced_title', 'tags', 'rc_comment_plain', 'diff_size',
+                  'rc_cur_id', 'rc_last_oldid', 'rc_old_len',
+                  'rc_this_oldid', 'rc_new_len', 'rc_id',
+                  'rc_namespace', 'rc_source', 'rc_type', 'rc_logid',
+                  'rc_log_action', 'rc_log_type', 'rc_minor',
+                  'rc_bot', 'rc_patrolled', 'rc_params', 'rc_new',
+                  'rc_deleted', 'rc_user', 'rc_timestamp', 'ht_text',
+                  'ht_id']
+    writer = csv.DictWriter(output, fieldnames=fieldnames, extrasaction='ignore')
+    output.write('\xEF\xBB\xBF')
+    writer.writeheader()
     for rev in revs:
         # TODO: better organization
         formatted_rev = format_revs(rev)
-        writer.writerow(formatted_rev.values())
+        writer.writerow(encode_vals(formatted_rev))
     ret = output.getvalue()
     return ret
 
@@ -118,8 +139,10 @@ def generate_report(request, tag=None, offset=0):
     lang = request.values.get('lang')
     offset = int(offset)
     if tag:
+        tag = tag.encode('utf8')
         tag = tag.lower()
     revs = Database.get_hashtags(tag, lang=lang, start=offset)
+    langs = Database.get_langs()
     # TODO: Get RevScore per rev
     # https://meta.wikimedia.org/wiki/Objective_Revision_Evaluation_Service
     if not revs:
@@ -134,7 +157,7 @@ def generate_report(request, tag=None, offset=0):
     prev, next = calculate_pages(offset, 
                                  int(stats['revisions'].replace(',', '')),
                                  PAGINATION)
-    page = {'start': offset, 
+    page = {'start': offset + 1, 
             'end': offset + len(revs),
             'prev': prev,
             'next': next}
@@ -142,7 +165,8 @@ def generate_report(request, tag=None, offset=0):
             'tag': tag, 
             'stats': stats,
             'page': page,
-            'lang': lang}
+            'lang': lang,
+            'langs': [l['htrc_lang'] for l in langs]}
 
 
 def create_app():
@@ -151,6 +175,7 @@ def create_app():
     templater = AshesRenderFactory(_template_dir)
     # TODO: Add support for @mentions
     routes = [('/', home, 'index.html'),
+              ('/docs', home, 'docs.html'),
               ('/search/', generate_report, 'report.html'),
               ('/search/all', generate_report, 'report.html'),
               ('/search/all/<offset>', generate_report, 'report.html'),
@@ -163,6 +188,11 @@ def create_app():
                        middlewares=[],
                        render_factory=templater)
 
+class FakeReq(object):
+    def __init__(self):
+        self.values = {'lang': 'en'}
+
+Req = FakeReq()
 
 if __name__ == '__main__':
     app = create_app()

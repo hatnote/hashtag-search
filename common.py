@@ -11,12 +11,15 @@ Other MediaWiki magic words and parser functions may contain the
 hashmark: https://www.mediawiki.org/wiki/Help:Magic_words
 '''
 EXCLUDED = ('redirect',
+            'weiterleitung',
+            'redirection',
             'ifexist',
             'switch', 
             'ifexpr',
-            'if')
+            'if',
+            'rs')
 
 # Number of results to display per page
-PAGINATION = 25
+PAGINATION = 50
 MAX_DB_ROW = 18446744073709551615  # "some large number" for all rows
 # See http://dev.mysql.com/doc/refman/5.0/en/select.html#id4651990

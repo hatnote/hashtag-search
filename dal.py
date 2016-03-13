@@ -56,7 +56,7 @@ class HashtagDatabaseConnection(object):
                      start=0,
                      end=PAGINATION):
         if not tag:
-            return self.get_all_hashtags(start, end)
+            return self.get_all_hashtags(lang=lang, start=start, end=end)
         if tag and tag[0] == '#':
             tag = tag[1:]
         if not lang:
@@ -110,11 +110,15 @@ class HashtagDatabaseConnection(object):
                         start=start)
             return ret
 
-    def get_top_hashtags(self, limit=10):
+    def get_top_hashtags(self, limit=10, nobots=True):
         """Gets the top hashtags from an arbitrarily "recent" group of edits
         (not all time).
         """
         excluded_p = ', '.join(['?' for i in range(len(EXCLUDED))])
+        if nobots:
+            bot_condition = 'AND rc_bot = 0'
+        else:
+            bot_condition = ''
         query_tmpl = '''
         SELECT ht.ht_text,
                COUNT(ht.ht_text) AS count
@@ -127,16 +131,17 @@ class HashtagDatabaseConnection(object):
                  ON ht.ht_id = htrc.ht_id
         WHERE  ht.ht_text REGEXP '[[:alpha:]]{1}[[:alnum:]]+'
         AND    ht.ht_text NOT IN (%s)
+        %s
         GROUP  BY ht.ht_text
         ORDER  BY count DESC
         LIMIT  ?;'''
-        recent_count = 20000
-        query = query_tmpl % (recent_count, excluded_p)
+        recent_count = 100000
+        query = query_tmpl % (recent_count, excluded_p, bot_condition)
         params = EXCLUDED + (limit,)
         # This query is cached because it's loaded for each visit to
         # the index page
         with tlog.critical('get_top_hashtags') as rec:
-            ret = self.execute(query, params, cache_name='top-tags')
+            ret = self.execute(query, params, cache_name='top-tags-%s' % nobots)
             rec.success('Fetched top tags with limit of {limit}',
                         limit=limit)
             return ret
@@ -154,7 +159,7 @@ class HashtagDatabaseConnection(object):
 
     def get_hashtag_stats(self, tag, lang=None):
         if not tag:
-            return self.get_all_hashtag_stats()
+            return self.get_all_hashtag_stats(lang=lang)
         if tag and tag[0] == '#':
             tag = tag[1:]
         if not lang:
@@ -202,8 +207,7 @@ class HashtagDatabaseConnection(object):
         AND rc.htrc_lang LIKE ?
         AND ht.ht_text NOT IN(%s)
         AND ht.ht_text REGEXP '[[:alpha:]]+'
-        AND CHAR_LENGTH(ht.ht_text) > 1
-        ORDER BY rc.rc_id DESC''' % ', '.join(['?' for i in range(len(EXCLUDED))])
+        AND CHAR_LENGTH(ht.ht_text) > 1''' % ', '.join(['?' for i in range(len(EXCLUDED))])
         with tlog.critical('get_all_hashtag_stats') as rec:
             ret = self.execute(query, (lang,) + EXCLUDED)
             rec.success('Fetched all hashtag stats')

@@ -12,7 +12,8 @@
 
   <script type="text/javascript" src="/hashtags/static/js/jquery.js"></script> 
   <script type="text/javascript" src="/hashtags/static/js/history.min.js"></script> 
-  <script type="text/javascript" src="/hashtags/static/js/jquery.tablesorter.min.js"></script> 
+  <script type="text/javascript" src="/hashtags/static/js/jquery.tablesorter.min.js"></script>
+  <script src="https://apis.google.com/js/platform.js" async defer></script>
 
   <style>
   .mainspace-only-label {
@@ -41,10 +42,38 @@
     margin: 0 0.2rem;
   }
   .info p {
-    margin: 0.1em 0;
+    margin: 1em 0;
     font-size: 1em;
 
     color: #9E9E9E;
+  }
+  .info h2 {
+  font-size: 3.5rem;
+  margin-bottom: 0;
+  }
+  .stats-table {
+  margin: 0;
+  }
+  .stats-table td {
+  padding: inherit 0;
+      padding: 0 0.5em;
+    border: 0;
+  }
+  .stat {
+  color: #222;
+  text-align: right;
+  }
+  .stat-label {
+  color: #999;
+}
+  p.stats-subtitle {
+  margin: 0 0 1.5em 0;
+
+  }
+  p.stats-date-range {
+  margin: 0.5em 0 0 0;
+  font-size: 0.9em;
+  color: #222;
   }
   .results {
     text-align: center;
@@ -55,6 +84,12 @@
     text-align: center;
     font-size: 85%;
     color: #999;
+  }
+  .no-wrap {
+  white-space: nowrap;
+  }
+  .right-align {
+  text-align: right;
   }
   th.headerSortUp { 
     background: no-repeat right url(images/desc.gif); 
@@ -69,6 +104,27 @@
   }
   form {
     margin-bottom: 0;
+  }
+  .save {
+  margin-left: 1em;
+  }
+  .docs-link {
+  text-decoration: none;
+  border-bottom: 1px #999 dotted;
+  color: #999;
+  }
+  .comment {
+  color: #999;
+  font-size: 85%;
+  margin: 1em 0 0 0;
+  }
+  .title {
+  font-weight: 800;
+  margin: 0;
+  }
+  .lang {
+  font-weight: normal;
+  color: #999;
   }
   </style>
 
@@ -103,19 +159,23 @@
   <div class="container">
     <form id="tag-search">
       <div class="row">
-	<div class="seven columns">
+	<div class="eight columns">
           <input class="u-full-width" type="search" placeholder="Enter a hashtag or @mention" id="search" value="{tag}">
 	</div>
 	<div class="two columns">
           <select class="u-full-width" id="lang">
+	    {^lang}
 	    <option value="" selected="selected">All</option>
+	    {:else}
+	    <option value="{lang}">{lang}</option>
+	    {/lang}
 	    {#langs}
 	    <option value="{.}">{.}</option>
 	    {/langs}
 	  </select>
 	</div>
-	<div class="three columns">
-	  <input class="button-primary" type="submit" value="Submit">
+	<div class="two columns">
+	  <input class="u-full-width button-primary" type="submit" value="Submit">
 	</div>
       </div>
     </form>
@@ -125,38 +185,52 @@
 	  <div class="row">
 	    <div class="two-thirds column">
 	      <h2>{?tag}#{tag}{:else}All tags{/tag}</h2>
-	      <p>{stats.oldest} - {stats.newest}</p>
+	      <p class="stats-subtitle">First appeared {stats.oldest}</p>
+	      <p><div class="g-savetodrive save" data-src="/hashtags/csv/{tag}{?lang}?lang={lang}&{:else}?{/lang}limit=20000" data-filename="{tag}-{stats.newest}.csv" data-sitename="Wikipedia Hashtag Search"></div><a href="/hashtags/csv/{tag}{?lang}?lang={lang}&{:else}?{/lang}limit=20000" download="{tag}-{stats.newest}.csv" class="save">Download CSV</a> (<span><a href="/hashtags/docs#download" class="docs-link">learn more</a>)</span></p>
 	    </div>
 	    <div class="one-third column">
-	      <p>{stats.revisions} revisions on {stats.pages} pages</p>
-	      <p>{stats.users} users</p>
-	      <p>{stats.bytes} bytes changed</p>
-	      <p>{stats.langs} language{@gt key=stats.langs value=1}s{/gt}</p>
+	      <p class="stats-date-range">{stats.oldest} - {stats.newest}</p>
+
+	      <table class="stats-table">
+		<tr>
+		  <td class="stat">{stats.revisions}</td>
+		  <td class="stat-label">revision{@gt key=stats.revisions value=1}s{/gt}</td>
+		</tr>
+		<tr>
+		   <td class="stat">{stats.pages}</td> 
+		   <td class="stat-label">page{@gt key=stats.pages value=1}s{/gt}</td>
+		</tr>
+		<tr>
+		  <td class="stat">{stats.users}</td>
+		  <td class="stat-label">user{@gt key=stats.users value=1}s{/gt}</td>
+		</tr>
+		<tr>
+		  <td class="stat">{stats.bytes}</td>
+		  <td class="stat-label">byte{@gt key=stats.bytes value=1}s{/gt} changed</td>
+		<tr>
+		  <td class="stat">{stats.langs}</td>
+		  <td class="stat-label">language{@gt key=stats.langs value=1}s{/gt}</td>
+		</tr>
+	      </table>
 	    </div>
 	  </div>
 	</div>
         <table class="u-full-width tablesorter" id="rc-table">
           <thead>
             <tr>
-              <th>User</th>
               <th>Page</th>
-	      <th>Language</th>
-              <th>Tags</th>
-              <th>Summary</th>
-              <th>Size</th>
-              <th>Time</th>
+              <th>User</th>
+              <th class="right-align">Size</th>
+              <th>Date</th>
             </tr>
           </thead>
           <tbody>
           {#revisions}
             <tr>
-              <td><a href="{rc_user_url}">{rc_user_text}</a></td>
-              <td><a href="{diff_url}">{spaced_title}</a></td>
-	      <td>{htrc_lang}</td>
-              <td>{#tags}{.}{@sep}, {/sep}{/tags}</td>
-              <td>{rc_comment|s}</td>
-              <td>{diff_size}</td>
-              <td>{date}</td>
+              <td><p class="title"><a href="{diff_url}">{spaced_title}</a> <span class="lang">({htrc_lang})</span></p><p class="comment">{rc_comment|s}</p></td>
+              <td class="no-wrap"><a href="{rc_user_url}">{rc_user_text}</a></td>
+              <td class="right-align">{diff_size}</td>
+              <td class="no-wrap">{date}</td>
             </tr>
           {/revisions}
           </tbody>
@@ -181,6 +255,10 @@
 	  {/gt}
 	</div>
 	<a href="/hashtags" class="u-full-width button">Home</a>
+	<div class="row results">
+
+	</div>
+
       </div>
     </div>
   </div>
