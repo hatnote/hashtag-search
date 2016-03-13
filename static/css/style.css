@@ -115,3 +115,14 @@ form {
     color: #999;
 }
 
+@media (max-width: 800px) {
+    input.button-primary {
+	padding: 0 5px;
+    }
+    .no-wrap {
+	white-space: normal;
+    }
+    p.stats-date-range {
+	font-size: 80%;
+    }
+}
