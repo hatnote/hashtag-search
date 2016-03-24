@@ -29,34 +29,25 @@
     </div>
   </div>
   <div class="container docs">
-    <h2>Stats & logs</h2>
+    <h2>Logs for {lang}</h2>
 
-    <p>Total stats for the last <strong>3 days</strong>. See the logs for individual languages for more details.</p>
-    <p>Note, if there is an interval greater than <span class="urgent">3600</span> seconds, we may need to run an additional query to avoid missing any tags. Please <a href="https://github.com/hatnote/hashtag-search/issues/new">open an issue on github</a> to let us know.</p> 
+    <p><a href="http://tools.wmflabs.org/hashtags/logs">Back to overall stats</a></p>
 
     <table>
       <tr>
-	<th>Language</th>
-	<th>Updates</th>
-	<th>Tags</th>
-	<th>Mentions</th>
-	<th>Changes</th>
-	<th>Intervals</th>
-	<th>Latest</th>
+	<th>uuid</th>
+	<th>start</th>
+	<th>complete</th>
+	<th>command</th>
+	<th>output</th>
       </tr>
       {#logs}
       <tr>
-	<td><a href="http://tools.wmflabs.org/hashtags/logs/{lang}">{lang}</a></td>
-	<td>{count}</td>
-	<td>{results.tags_added} / {results.total_tags}</td>	
-	<td>{results.mentions_added} / {results.total_mentions}</td>
-	<td>{results.changes_added} / {results.total_changes}</td>
-	<td>
-	  {#slow}
-	  <p class="intervals {@gt key=time_diff value=1000}minor{/gt} {@gt key=time_diff value=3600}urgent{/gt}">{time_diff}</p>
-	  {/slow}
-	</td>
-	<td><a href="http://tools.wmflabs.org/hashtags/logs/{lang}">{results.newest}</a></td>
+	<td>{uuid}</td>
+	<td>{start_time}</td>
+	<td>{end_time}</td>
+	<td>{command}</td>
+	<td>{output}</td>
       </tr>
       {/logs}
     </table>

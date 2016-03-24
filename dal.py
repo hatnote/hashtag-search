@@ -253,3 +253,16 @@ class HashtagDatabaseConnection(object):
         LIMIT ?'''
         with tlog.critical('get_run_log') as rec:
             return self.execute(query, (limit,), show_tables=True)
+
+    def get_lang_run_log(self, lang, limit=50000, days=3):
+        query = '''
+        SELECT *
+        FROM start_log AS sl 
+        JOIN complete_log AS cl 
+        ON sl.run_uuid = cl.run_uuid 
+        WHERE cl.lang = ? 
+        AND cl.complete_timestamp > DATE_SUB(NOW(), INTERVAL ? DAY)
+        ORDER BY cl.complete_timestamp DESC
+        LIMIT ?'''
+        with tlog.critical('get_run_log') as rec:
+            return self.execute(query, (lang, days, limit), show_tables=True)

@@ -120,6 +120,19 @@ form {
     margin: 5em;
 }
 
+.intervals {
+    text-align: center;
+}
+
+.urgent {
+    background-color: red !important;
+    color: white;
+}
+
+.minor {
+    background-color: yellow;
+}
+
 @media (max-width: 800px) {
     input.button-primary {
 	padding: 0 5px;

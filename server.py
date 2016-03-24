@@ -110,7 +110,23 @@ def home():
             'langs': [l['htrc_lang'] for l in langs]}
 
 
+def generate_lang_run_log(request, lang):
+    days = request.values.get('days', 3)
+    limit = request.values.get('limit', 50000)
+    run_logs = Database.get_lang_run_log(lang=lang,
+                                         limit=limit,
+                                         days=days)
+    return {'lang': lang,
+            'days': days,
+            'logs': [{'uuid': l['cl.run_uuid'],
+                      'end_time': l['cl.complete_timestamp'].strftime('%e %b %Y %H:%M:%S'),
+                      'start_time': l['sl.start_timestamp'].strftime('%e %b %Y %H:%M:%S'),
+                      'command': l['sl.command'],
+                      'output': l['cl.output']} for l in run_logs]}
+
+
 def generate_run_log():
+
     ret = {'logs': [], 'date': datetime.now().strftime('%e %b %Y %H:%M:%S')}
     run_logs = Database.get_run_log()
     sorted_logs = defaultdict(list)
@@ -126,12 +142,16 @@ def generate_run_log():
             run_log['json_output'] = {}
         sorted_logs[lang].append(run_log)
     for lang, run_logs in sorted_logs.items():
+        run_logs.sort(key=lambda l: l['cl.complete_timestamp'])
+        newest = run_logs[-1]['cl.complete_timestamp'].strftime('%e %b %Y %H:%M:%S')
         results = {'changes_added': 0,
                    'tags_added': 0,
                    'mentions_added': 0,
                    'total_tags': 0,
                    'total_mentions': 0,
-                   'total_changes': 0}
+                   'total_changes': 0,
+                   'newest': newest}
+
         for run_log in run_logs:
            results['changes_added'] += run_log['json_output'].get('changes_added')
            results['tags_added'] += run_log['json_output'].get('tags_added')
@@ -222,6 +242,7 @@ def create_app():
               ('/csv/<tag>', generate_csv, render_basic),
               ('/search/<tag>/<offset>', generate_report, 'report.html'),
               ('/logs', generate_run_log, 'logs.html'),
+              ('/logs/<lang>', generate_lang_run_log, 'lang_logs.html'),
               ('/static', StaticApplication(_static_dir)),
               ('/meta/', MetaApplication())]
     return Application(routes, 
