@@ -110,7 +110,7 @@ class HashtagDatabaseConnection(object):
                         start=start)
             return ret
 
-    def get_top_hashtags(self, limit=10, nobots=True):
+    def get_top_hashtags(self, limit=10, recent_count=100000, nobots=True):
         """Gets the top hashtags from an arbitrarily "recent" group of edits
         (not all time).
         """
@@ -126,7 +126,7 @@ class HashtagDatabaseConnection(object):
                JOIN hashtag_recentchanges AS htrc
                  ON htrc.htrc_id = rc.htrc_id
                     AND rc.htrc_id > (SELECT MAX(htrc_id)
-                                      FROM   recentchanges) - %s
+                                      FROM   recentchanges) - ?
                JOIN hashtags AS ht
                  ON ht.ht_id = htrc.ht_id
         WHERE  ht.ht_text REGEXP '[[:alpha:]]{1}[[:alnum:]]+'
@@ -135,13 +135,12 @@ class HashtagDatabaseConnection(object):
         GROUP  BY ht.ht_text
         ORDER  BY count DESC
         LIMIT  ?;'''
-        recent_count = 100000
-        query = query_tmpl % (recent_count, excluded_p, bot_condition)
-        params = EXCLUDED + (limit,)
+        query = query_tmpl % (excluded_p, bot_condition)
+        params = (recent_count,) + EXCLUDED + (limit,)
         # This query is cached because it's loaded for each visit to
         # the index page
         with tlog.critical('get_top_hashtags') as rec:
-            ret = self.execute(query, params, cache_name='top-tags-%s' % nobots)
+            ret = self.execute(query, params, cache_name='top-tags-%s-%s' % (nobots, limit))
             rec.success('Fetched top tags with limit of {limit}',
                         limit=limit)
             return ret

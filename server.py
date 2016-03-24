@@ -96,6 +96,12 @@ def format_stats(stats):
     return stats
 
 
+def generate_tag_list(limit=100):
+    recent_count = limit * 10000
+    tags = Database.get_top_hashtags(limit=limit, recent_count=recent_count)
+    return tags
+
+
 def home():
     with tlog.critical('home') as rec:
         top_tags = Database.get_top_hashtags()
@@ -235,6 +241,7 @@ def create_app():
     # TODO: Add support for @mentions
     routes = [('/', home, 'index.html'),
               ('/docs', home, 'docs.html'),
+              ('/tags/<limit>', generate_tag_list, render_basic),
               ('/search/', generate_report, 'report.html'),
               ('/search/all', generate_report, 'report.html'),
               ('/search/all/<offset>', generate_report, 'report.html'),
