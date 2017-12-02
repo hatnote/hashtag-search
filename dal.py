@@ -8,8 +8,8 @@ from common import (EXCLUDED, PAGINATION)
 from log import tlog
 
 DB_CONFIG_PATH = os.path.expanduser('~/replica.my.cnf')
-HT_DB_HOST = 's1.labsdb'  # The hashtag table is on the same server as the enwiki db replica
-HT_DB_NAME = 's52467__hashtags'
+HT_DB_HOST = 'tools.db.svc.eqiad.wmflabs'
+HT_DB_NAME = 's52467__new_hashtags'
 
 
 CACHE_EXPIRATION = 5 * 60
