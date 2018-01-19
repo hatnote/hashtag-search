@@ -52,6 +52,16 @@
 	  <input class="u-full-width button-primary" type="submit" value="Submit">
 	</div>
       </div>
+    <div class="row">
+      <div class="three columns" style="margin-right: 2em">
+        <label for="startdate">Start date:</label>
+          <input id="startdate" type="date" value="{startdate}">
+      </div>
+      <div class="three columns">
+        <label for="enddate">End date:</label>
+          <input id="enddate" type="date" value="{enddate}">
+      </div>
+    </div>
     </form>
     {^revisions}
     <p class="no-results">No revisions tagged with <strong>#{tag}</strong> (yet){?lang} in {lang}{/lang}.</p>
@@ -63,7 +73,7 @@
 	    <div class="two-thirds column">
 	      <h2>{?tag}#{tag}{:else}All tags{/tag}</h2>
 	      <p class="stats-subtitle">First appeared {stats.oldest}</p>
-	      <p><div class="g-savetodrive save" data-src="/hashtags/csv/{tag}{?lang}?lang={lang}&{:else}?{/lang}limit=20000" data-filename="{tag}-{stats.newest}.csv" data-sitename="Wikipedia Hashtag Search"></div><a href="/hashtags/csv/{tag}{?lang}?lang={lang}&{:else}?{/lang}limit=20000" download="{tag}-{stats.newest}.csv" class="save">Download CSV</a> (<span><a href="/hashtags/docs#download" class="docs-link">learn more</a>)</span></p>
+	      <p><div class="g-savetodrive save" data-src="/hashtags/csv/{tag}{?url_structure}{url_structure}&{:else}?{/url_structure}limit=20000" data-filename="{tag}-{stats.newest}.csv" data-sitename="Wikipedia Hashtag Search"></div><a href="/hashtags/csv/{tag}{?url_structure}{url_structure}&{:else}?{/url_structure}limit=20000" download="{tag}-{stats.newest}.csv" class="save">Download CSV</a> (<span><a href="/hashtags/docs#download" class="docs-link">learn more</a>)</span></p>
 	    </div>
 	    <div class="one-third column">
 	      <p class="stats-date-range">{stats.oldest} - {stats.newest}</p>
@@ -119,19 +129,19 @@
       <div class="row">
 	<div class="one-half column">
 	  {@gte key=page.prev value=0}
-	  <a href="/hashtags/search/{?tag}{tag}{:else}all{/tag}/{page.prev}{?lang}?lang={lang}{/lang}" class="u-full-width button">< previous</a>
+	  <a href="/hashtags/search/{?tag}{tag}{:else}all{/tag}/{page.prev}{url_structure}" class="u-full-width button">< previous</a>
           {:else}
 	  &nbsp;
 	  {/gte}
 	</div>
 	<div class="one-half column">
 	  {@gt key=page.next value=0}
-	  <a href="/hashtags/search/{?tag}{tag}{:else}all{/tag}/{page.next}{?lang}?lang={lang}{/lang}" class="u-full-width button">next > </a>
+	  <a href="/hashtags/search/{?tag}{tag}{:else}all{/tag}/{page.next}{url_structure}" class="u-full-width button">next > </a>
 	  {:else}
 	  &nbsp;
 	  {/gt}
 	</div>
-	<a href="/hashtags" class="u-full-width button">Home</a>
+	<a href="/hashtags-test" class="u-full-width button">Home</a>
 	<div class="row results">
 
 	</div>
