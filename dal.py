@@ -77,7 +77,7 @@ class HashtagDatabaseConnection(object):
         WHERE ht.ht_text = ?
         AND rc.htrc_lang LIKE ?
         AND rc.rc_timestamp/1000000 > ?
-        AND rc.rc_timestamp/1000000 < ?
+        AND rc.rc_timestamp/1000000 <= ?
         ORDER BY rc.rc_timestamp DESC
         LIMIT ?, ?'''
         params = (tag, lang, startdate, enddate, start, end)
@@ -115,7 +115,7 @@ class HashtagDatabaseConnection(object):
         AND ht.ht_text REGEXP '[[:alpha:]]+'
         AND CHAR_LENGTH(ht.ht_text) > 1
         AND rc.rc_timestamp/1000000 > ?
-        AND rc.rc_timestamp/1000000 < ?
+        AND rc.rc_timestamp/1000000 <= ?
         ORDER BY rc.rc_id DESC
         LIMIT ?, ?''' % ', '.join(['?' for i in range(len(EXCLUDED))])
         params = (lang,) + EXCLUDED + (startdate,) + (enddate,) + (start, end)
@@ -198,7 +198,7 @@ class HashtagDatabaseConnection(object):
         WHERE ht.ht_text = ?
         AND rc.htrc_lang LIKE ?
         AND rc.rc_timestamp/1000000 > ?
-        AND rc.rc_timestamp/1000000 < ?
+        AND rc.rc_timestamp/1000000 <= ?
         ORDER BY rc.rc_id DESC'''
         params = (tag, lang, startdate, enddate)
         with tlog.critical('get_hashtag_stats') as rec:
@@ -226,7 +226,7 @@ class HashtagDatabaseConnection(object):
         WHERE rc.rc_type = 0
         AND rc.htrc_lang LIKE ?
         AND rc.rc_timestamp/1000000 > ?
-        AND rc.rc_timestamp/1000000 < ?
+        AND rc.rc_timestamp/1000000 <= ?
         AND ht.ht_text NOT IN(%s)
         AND ht.ht_text REGEXP '[[:alpha:]]+' ''' % ', '.join(['?' for i in range(len(EXCLUDED))])
         with tlog.critical('get_all_hashtag_stats') as rec:
