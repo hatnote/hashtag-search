@@ -236,6 +236,10 @@ def generate_report(request, tag=None, offset=0):
             url_structure += separator + item + "=" + url_parameters[item]
 
     start_date, end_date = format_dates(start_date_original, end_date_original)
+    if start_date_original or end_date_original:
+        date_filtered = True
+    else:
+        date_filtered = False
 
     offset = int(offset)
     if tag:
@@ -255,7 +259,8 @@ def generate_report(request, tag=None, offset=0):
                 'langs': [l['htrc_lang'] for l in langs],
                 'startdate': start_date_original,
                 'enddate': end_date_original,
-                'url_structure': url_structure}
+                'url_structure': url_structure,
+                'filtered_by_date': date_filtered}
     stats = Database.get_hashtag_stats(tag, lang=lang, startdate=start_date, enddate=end_date)
     stats = format_stats(stats[0])
     ret = [format_revs(rev) for rev in revs]
@@ -274,7 +279,8 @@ def generate_report(request, tag=None, offset=0):
             'langs': [l['htrc_lang'] for l in langs],
             'startdate': start_date_original,
             'enddate': end_date_original,
-            'url_structure': url_structure}
+            'url_structure': url_structure,
+            'filtered_by_date': date_filtered}
 
 
 def create_app():
