@@ -70,17 +70,20 @@ def format_revs(rev):
     return rev
 
 
-def format_dates(start_date, end_date):
-    if start_date:
-        start_date = int("".join(start_date.split("-")))
+def format_dates(startdate_str, enddate_str):
+    _date_format = '%Y-%m-%d'
+    # TODO: support time, with %Y-%m-%dT%H:%M:%S.%fZ
+    if startdate_str:
+        startdate = datetime.strptime(startdate_str, _date_format)
     else:
-        start_date = 0
-    if end_date:
-        end_date = int("".join(end_date.split("-")))
-    else:
-        end_date = 30000000  # Arbitrary future date
+        startdate = 0
 
-    return start_date, end_date
+    if enddate_str:
+        enddate = datetime.strptime(enddate_str, _date_format)
+    else:
+        enddate = datetime.now()
+
+    return startdate, enddate
 
 
 def calculate_pages(offset, total, pagination):
@@ -188,13 +191,13 @@ def generate_run_log():
 def generate_csv(request, tag):
     lang = request.values.get('lang')
     limit = request.values.get('limit', 20000)
-    start_date = request.values.get('startdate')
-    end_date = request.values.get('enddate')
-    start_date, end_date = format_dates(start_date, end_date)
+    startdate_str = request.values.get('startdate')
+    enddate_str = request.values.get('enddate')
+    startdate, enddate = format_dates(startdate_str, enddate_str)
 
     tag = tag.lower()
     tag = tag.encode('utf8')
-    revs = Database.get_hashtags(tag, lang=lang, end=limit, startdate=start_date, enddate=end_date)
+    revs = Database.get_hashtags(tag, lang=lang, end=limit, startdate=startdate, enddate=enddate)
     output = io.BytesIO()
     fieldnames = ['htrc_lang', 'date', 'diff_url', 'rc_user_text',
                   'spaced_title', 'tags', 'rc_comment_plain', 'diff_size',
@@ -218,25 +221,25 @@ def generate_csv(request, tag):
 
 def generate_report(request, tag=None, offset=0):
     lang = request.values.get('lang')
-    start_date_original = request.values.get('startdate')
-    end_date_original = request.values.get('enddate')
+    startdate_str = request.values.get('startdate')
+    enddate_str = request.values.get('enddate')
 
-    url_structure = ""
+    url_structure = ''
     url_parameters = {'lang': lang,
-                      'startdate': start_date_original,
-                      'enddate': end_date_original}
+                      'startdate': startdate_str,
+                      'enddate': enddate_str}
 
-    for item in url_parameters:
-        if url_parameters[item]:
+    for param_name, param in url_parameters.items():
+        if param:
             if len(url_structure) == 0:
-                separator = "?"
+                separator = '?'
             else:
-                separator = "&"
+                separator = '&'
             
-            url_structure += separator + item + "=" + url_parameters[item]
+            url_structure += separator + param_name + '=' + param
 
-    start_date, end_date = format_dates(start_date_original, end_date_original)
-    if start_date_original or end_date_original:
+    startdate, enddate = format_dates(startdate_str, enddate_str)
+    if startdate_str or enddate_str:
         date_filtered = True
     else:
         date_filtered = False
@@ -245,7 +248,7 @@ def generate_report(request, tag=None, offset=0):
     if tag:
         tag = tag.encode('utf8')
         tag = tag.lower()
-    revs = Database.get_hashtags(tag, lang=lang, start=offset, startdate=start_date, enddate=end_date)
+    revs = Database.get_hashtags(tag, lang=lang, start=offset, startdate=startdate, enddate=enddate)
     langs = Database.get_langs()
 
     # TODO: Get RevScore per rev
@@ -257,11 +260,11 @@ def generate_report(request, tag=None, offset=0):
                 'page': {},
                 'lang': lang,
                 'langs': [l['htrc_lang'] for l in langs],
-                'startdate': start_date_original,
-                'enddate': end_date_original,
+                'startdate': startdate_str,
+                'enddate': enddate_str,
                 'url_structure': url_structure,
                 'filtered_by_date': date_filtered}
-    stats = Database.get_hashtag_stats(tag, lang=lang, startdate=start_date, enddate=end_date)
+    stats = Database.get_hashtag_stats(tag, lang=lang, startdate=startdate, enddate=enddate)
     stats = format_stats(stats[0])
     ret = [format_revs(rev) for rev in revs]
     prev, next = calculate_pages(offset, 
@@ -277,8 +280,8 @@ def generate_report(request, tag=None, offset=0):
             'page': page,
             'lang': lang,
             'langs': [l['htrc_lang'] for l in langs],
-            'startdate': start_date_original,
-            'enddate': end_date_original,
+            'startdate': startdate_str,
+            'enddate': enddate_str,
             'url_structure': url_structure,
             'filtered_by_date': date_filtered}
 
