@@ -1,8 +1,7 @@
 import os
 
-from lithoxyl import Logger, SensibleSink, Formatter, StreamEmitter
+from lithoxyl import Logger, SensibleSink, SensibleFormatter, StreamEmitter, SensibleFilter
 from lithoxyl.emitters import FileEmitter
-from lithoxyl.filters import ThresholdFilter
 
 class FixedFileEmitter(FileEmitter):
     def __init__(self, filepath, encoding=None, **kwargs):
@@ -13,10 +12,10 @@ LOGFILE = 'server.log'  # TODO: where?
 
 tlog = Logger('toplog')
 
-file_fmt = Formatter('{status_char}{end_local_iso8601_noms_notz} - {duration_s\
+file_fmt = SensibleFormatter('{status_char}{end_local_iso8601_noms_notz} - {duration_s\
 ecs}s - {record_name} - {message}')
 file_emt = FixedFileEmitter(LOGFILE)
-file_filter = ThresholdFilter(success='debug',
+file_filter = SensibleFilter(success='debug',
                               failure='debug',
                               exception='debug')
 file_sink = SensibleSink(formatter=file_fmt,

@@ -54,9 +54,15 @@ class HashtagDatabaseConnection(object):
                      tag=None,
                      lang=None,
                      start=0,
-                     end=PAGINATION):
+                     end=PAGINATION,
+                     startdate=None,
+                     enddate=None):
         if not tag:
-            return self.get_all_hashtags(lang=lang, start=start, end=end)
+            return self.get_all_hashtags(lang=lang,
+                                         start=start,
+                                         end=end,
+                                         startdate=startdate,
+                                         enddate=enddate)
         if tag and tag[0] == '#':
             tag = tag[1:]
         if not lang:
@@ -70,16 +76,22 @@ class HashtagDatabaseConnection(object):
         ON ht.ht_id = htrc.ht_id
         WHERE ht.ht_text = ?
         AND rc.htrc_lang LIKE ?
+        AND rc.rc_timestamp BETWEEN ? AND ?
         ORDER BY rc.rc_timestamp DESC
         LIMIT ?, ?'''
-        params = (tag, lang, start, end)
+        params = (tag, lang, startdate, enddate, start, end)
         with tlog.critical('get_hashtags') as rec:
             ret = self.execute(query, params)
             rec.success('Fetched revisions tagged with {tag}',
                         tag=tag)
             return ret
 
-    def get_all_hashtags(self, lang=None, start=0, end=PAGINATION):
+    def get_all_hashtags(self,
+                         lang=None,
+                         start=0,
+                         end=PAGINATION,
+                         startdate=None,
+                         enddate=None):
         """Rules for hashtags:
         1. Does not include MediaWiki magic words
         (like #REDIRECT) or parser functions
@@ -101,9 +113,10 @@ class HashtagDatabaseConnection(object):
         AND ht.ht_text NOT IN(%s)
         AND ht.ht_text REGEXP '[[:alpha:]]+'
         AND CHAR_LENGTH(ht.ht_text) > 1
+        AND rc.rc_timestamp BETWEEN ? AND ?
         ORDER BY rc.rc_id DESC
         LIMIT ?, ?''' % ', '.join(['?' for i in range(len(EXCLUDED))])
-        params = (lang,) + EXCLUDED + (start, end)
+        params = (lang,) + EXCLUDED + (startdate, enddate, start, end)
         with tlog.critical('get_all_hashtags') as rec:
             ret = self.execute(query, params)
             rec.success('Fetched all hashtags starting at {start}',
@@ -156,9 +169,13 @@ class HashtagDatabaseConnection(object):
             rec.success('Fetched available languages')
             return ret
 
-    def get_hashtag_stats(self, tag, lang=None):
+    def get_hashtag_stats(self,
+                          tag,
+                          lang=None,
+                          startdate=None,
+                          enddate=None):
         if not tag:
-            return self.get_all_hashtag_stats(lang=lang)
+            return self.get_all_hashtag_stats(lang=lang, startdate=startdate, enddate=enddate)
         if tag and tag[0] == '#':
             tag = tag[1:]
         if not lang:
@@ -178,15 +195,16 @@ class HashtagDatabaseConnection(object):
         ON ht.ht_id = htrc.ht_id
         WHERE ht.ht_text = ?
         AND rc.htrc_lang LIKE ?
+        AND rc.rc_timestamp BETWEEN ? AND ?
         ORDER BY rc.rc_id DESC'''
-        params = (tag, lang)
+        params = (tag, lang, startdate, enddate)
         with tlog.critical('get_hashtag_stats') as rec:
             ret = self.execute(query, params)
             rec.success('Fetched stats for {tag}',
                         tag=tag)
             return ret
 
-    def get_all_hashtag_stats(self, lang=None):
+    def get_all_hashtag_stats(self, lang=None, startdate=None, enddate=None):
         # TODO: Add conditions here
         if not lang:
             lang = '%'
@@ -204,10 +222,11 @@ class HashtagDatabaseConnection(object):
         ON ht.ht_id = htrc.ht_id
         WHERE rc.rc_type = 0
         AND rc.htrc_lang LIKE ?
+        AND rc.rc_timestamp BETWEEN ? AND ?
         AND ht.ht_text NOT IN(%s)
         AND ht.ht_text REGEXP '[[:alpha:]]+' ''' % ', '.join(['?' for i in range(len(EXCLUDED))])
         with tlog.critical('get_all_hashtag_stats') as rec:
-            ret = self.execute(query, (lang,) + EXCLUDED)
+            ret = self.execute(query, (lang, startdate, enddate,) + EXCLUDED)
             rec.success('Fetched all hashtag stats')
             return ret
 

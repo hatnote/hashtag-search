@@ -1,0 +1,4 @@
+clastic==0.5.0
+ashes==17.0.0
+lithoxyl==0.4.1
+oursql==0.9.3.2
