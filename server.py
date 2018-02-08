@@ -71,15 +71,16 @@ def format_revs(rev):
 
 
 def format_dates(startdate_str, enddate_str):
-    _date_format = '%Y-%m-%d'
+    _date_fmt = '%Y-%m-%d'
     # TODO: support time, with %Y-%m-%dT%H:%M:%S.%fZ
     if startdate_str:
-        startdate = datetime.strptime(startdate_str, _date_format)
+        startdate = datetime.strptime(startdate_str, _date_fmt)
     else:
         startdate = 0
 
     if enddate_str:
-        enddate = datetime.strptime(enddate_str, _date_format)
+        # if enddate_str doesn't specify time, assume they mean the full day
+        enddate = datetime.strptime(enddate_str, _date_fmt) + timedelta(days=1)
     else:
         enddate = datetime.now()
 
